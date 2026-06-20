@@ -1,71 +1,80 @@
 import { NextRequest, NextResponse } from 'next/server';
-import db from '@/lib/db';
+import { db } from '@/lib/db';
 
-// GET: 获取客户列表或单个客户详情
 export async function GET(request: NextRequest) {
-  const searchParams = request.nextUrl.searchParams;
-  const id = searchParams.get('id');
-  const keyword = searchParams.get('keyword') || '';
-  
-  if (id) {
-    // 获取单个客户详情和历史订单
-    const customer = db.prepare(`
-      SELECT * FROM customers WHERE id = ?
-    `).get(parseInt(id));
-    
-    const orders = db.prepare(`
-      SELECT * FROM orders WHERE customer_name = ?
-      ORDER BY date DESC
-    `).all((customer as { name: string })?.name || '');
-    
-    const totalOrders = db.prepare(`
-      SELECT COUNT(*) as count, COALESCE(SUM(total_price), 0) as total
-      FROM orders WHERE customer_name = ?
-    `).get((customer as { name: string })?.name || '') as { count: number; total: number };
-    
-    return NextResponse.json({ customer, orders, totalOrders });
+  try {
+    const searchParams = request.nextUrl.searchParams;
+    const action = searchParams.get('action');
+    const keyword = searchParams.get('keyword');
+
+    if (action === 'search') {
+      const customers = db.prepare(`
+        SELECT * FROM customers 
+        WHERE name LIKE ? OR phone LIKE ?
+        ORDER BY created_at DESC
+      `).all(`%${keyword || ''}%`, `%${keyword || ''}%`);
+      return NextResponse.json({ customers });
+    }
+
+    // 获取客户列表
+    const customers = db.prepare(`
+      SELECT c.*, COUNT(o.id) as order_count
+      FROM customers c
+      LEFT JOIN orders o ON c.name = o.customer_name
+      GROUP BY c.id
+      ORDER BY c.created_at DESC
+    `).all();
+
+    return NextResponse.json({ customers });
+  } catch (error) {
+    console.error('获取客户失败:', error);
+    return NextResponse.json({ error: '获取客户失败' }, { status: 500 });
   }
-  
-  // 获取客户列表
-  const customers = db.prepare(`
-    SELECT c.id, c.name, c.phone,
-           (SELECT COUNT(*) FROM orders WHERE customer_name = c.name) as order_count
-    FROM customers c
-    WHERE c.name LIKE ?
-    ORDER BY order_count DESC, c.name
-  `).all(`%${keyword}%`);
-  
-  return NextResponse.json({ customers });
 }
 
-// POST: 添加新客户
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    
-    db.prepare(`
-      INSERT INTO customers (name, phone) VALUES (?, ?)
-    `).run(body.name, body.phone);
-    
-    return NextResponse.json({ success: true });
+    const { name, phone } = body;
+
+    // 检查是否已存在
+    const existing = db.prepare('SELECT * FROM customers WHERE name = ?').get(name);
+    if (existing) {
+      return NextResponse.json({ 
+        success: true, 
+        customer: existing,
+        message: '客户已存在' 
+      });
+    }
+
+    // 新增客户
+    const result = db.prepare(`
+      INSERT INTO customers (name, phone, created_at)
+      VALUES (?, ?, CURRENT_TIMESTAMP)
+    `).run(name, phone || '');
+
+    return NextResponse.json({ 
+      success: true, 
+      customerId: result.lastInsertRowid,
+      message: '客户添加成功' 
+    });
   } catch (error) {
     console.error('添加客户失败:', error);
-    return NextResponse.json({ error: '添加失败，客户可能已存在' }, { status: 500 });
+    return NextResponse.json({ error: '添加客户失败' }, { status: 500 });
   }
 }
 
-// PUT: 更新客户信息
 export async function PUT(request: NextRequest) {
   try {
     const body = await request.json();
-    
-    db.prepare(`
-      UPDATE customers SET name = ?, phone = ? WHERE id = ?
-    `).run(body.name, body.phone, body.id);
-    
-    return NextResponse.json({ success: true });
+    const { id, name, phone } = body;
+
+    db.prepare('UPDATE customers SET name = ?, phone = ? WHERE id = ?')
+      .run(name, phone, id);
+
+    return NextResponse.json({ success: true, message: '客户更新成功' });
   } catch (error) {
     console.error('更新客户失败:', error);
-    return NextResponse.json({ error: '更新失败' }, { status: 500 });
+    return NextResponse.json({ error: '更新客户失败' }, { status: 500 });
   }
 }

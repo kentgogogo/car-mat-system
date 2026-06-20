@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import db from '@/lib/db';
+import { db } from '@/lib/db';
 
 export async function GET() {
   try {
@@ -28,19 +28,19 @@ export async function GET() {
 
     // 当月每日订单趋势
     const dailyOrders = db.prepare(`
-      SELECT date, COUNT(*) as count, COALESCE(SUM(total_price), 0) as total
-      FROM orders
-      WHERE date LIKE ?
-      GROUP BY date
+      SELECT date, COUNT(*) as count, COALESCE(SUM(total_price), 0) as total 
+      FROM orders 
+      WHERE date LIKE ? 
+      GROUP BY date 
       ORDER BY date
-    `).all(`${currentMonth}%`) as Array<{ date: string; count: number; total: number }>;
+    `).all(`${currentMonth}%`) as { date: string; count: number; total: number }[];
 
     return NextResponse.json({
       todayOrders: todayOrders.count,
       todaySales: todaySales.total,
       monthOrders: monthOrders.count,
       monthSales: monthSales.total,
-      dailyOrders,
+      dailyOrders
     });
   } catch (error) {
     console.error('获取统计数据失败:', error);
