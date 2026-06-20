@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
@@ -24,7 +24,7 @@ const auxiliaryOptions = ['普通扣', '魔术扣'];
 const tailMatOptions = ['有', '无'];
 const paymentOptions = ['代收', '已付', '未付'];
 
-export default function EditOrderPage() {
+function EditOrderContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const orderId = searchParams.get('id');
@@ -476,5 +476,17 @@ export default function EditOrderPage() {
         </div>
       </nav>
     </div>
+  );
+}
+
+export default function EditOrderPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center text-gray-500">加载中...</div>
+      </div>
+    }>
+      <EditOrderContent />
+    </Suspense>
   );
 }

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { Card, CardContent } from '@/components/ui/card';
@@ -25,7 +25,7 @@ interface Order {
 
 const statusOptions = ['全部', '待裁剪', '待生产', '已完成', '已发货'];
 
-export default function OrderListPage() {
+function OrderListContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   
@@ -228,5 +228,17 @@ export default function OrderListPage() {
         </div>
       </nav>
     </div>
+  );
+}
+
+export default function OrderListPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center text-gray-500">加载中...</div>
+      </div>
+    }>
+      <OrderListContent />
+    </Suspense>
   );
 }

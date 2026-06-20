@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -32,7 +32,7 @@ interface Worker {
   price_per_piece: number;
 }
 
-export default function WorkerCompletePage() {
+function WorkerCompleteContent() {
   const searchParams = useSearchParams();
   const productionId = searchParams.get('id');
   
@@ -271,5 +271,17 @@ export default function WorkerCompletePage() {
         )}
       </div>
     </div>
+  );
+}
+
+export default function WorkerCompletePage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center text-gray-500">加载中...</div>
+      </div>
+    }>
+      <WorkerCompleteContent />
+    </Suspense>
   );
 }
