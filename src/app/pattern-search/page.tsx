@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
-import { Search, FileSearch, Home, Plus, List, Factory, MoreHorizontal } from 'lucide-react';
+import { Search, FileSearch, Home, Plus, List, Factory, MoreHorizontal, Upload, X, AlertCircle, CheckCircle } from 'lucide-react';
 
 interface Pattern {
   id: number;
@@ -38,6 +38,12 @@ export default function PatternSearchPage() {
   const [patterns, setPatterns] = useState<Pattern[]>([]);
   const [loading, setLoading] = useState(false);
   const [searched, setSearched] = useState(false);
+
+  // 导入相关状态
+  const [showImportModal, setShowImportModal] = useState(false);
+  const [importing, setImporting] = useState(false);
+  const [importResult, setImportResult] = useState<{ success: boolean; message: string; count?: number } | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // 初始化获取筛选数据
   useEffect(() => {
@@ -93,14 +99,88 @@ export default function PatternSearchPage() {
     setSearched(false);
   };
 
+  // 处理文件导入
+  const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    // 检查文件类型
+    if (!file.name.endsWith('.json')) {
+      setImportResult({ success: false, message: '请上传JSON格式的文件' });
+      return;
+    }
+
+    setImporting(true);
+    setImportResult(null);
+
+    try {
+      const text = await file.text();
+      const data = JSON.parse(text);
+
+      // 验证数据格式
+      if (!data.patterns || !Array.isArray(data.patterns)) {
+        setImportResult({ success: false, message: 'JSON格式错误，需要包含patterns数组' });
+        setImporting(false);
+        return;
+      }
+
+      // 调用导入API
+      const res = await fetch('/api/pattern-batch-import', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ patterns: data.patterns }),
+      });
+
+      const result = await res.json();
+      
+      if (result.success) {
+        setImportResult({ 
+          success: true, 
+          message: result.message || `成功导入 ${result.count} 条数据`,
+          count: result.count 
+        });
+        // 刷新筛选数据
+        fetchFilterData();
+        // 清空查询结果
+        setPatterns([]);
+        setSearched(false);
+      } else {
+        setImportResult({ success: false, message: result.error || '导入失败' });
+      }
+    } catch (error) {
+      console.error('导入失败:', error);
+      setImportResult({ success: false, message: '文件解析失败，请检查JSON格式' });
+    } finally {
+      setImporting(false);
+      // 清空文件输入
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
+  };
+
+  const closeImportModal = () => {
+    setShowImportModal(false);
+    setImportResult(null);
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 pb-16">
       {/* 顶部标题栏 */}
       <div className="sticky top-0 z-50 bg-blue-600 text-white px-4 py-3 shadow-md">
-        <h1 className="text-lg font-semibold flex items-center gap-2">
-          <FileSearch className="w-5 h-5" />
-          版型查询
-        </h1>
+        <div className="flex justify-between items-center">
+          <h1 className="text-lg font-semibold flex items-center gap-2">
+            <FileSearch className="w-5 h-5" />
+            版型查询
+          </h1>
+          <button
+            onClick={() => setShowImportModal(true)}
+            className="flex items-center gap-1 px-3 py-1.5 bg-blue-500 rounded-lg text-sm hover:bg-blue-400 transition"
+          >
+            <Upload className="w-4 h-4" />
+            导入数据
+          </button>
+        </div>
       </div>
 
       {/* 搜索区域 */}
@@ -241,6 +321,91 @@ export default function PatternSearchPage() {
               ))}
             </div>
           )}
+        </div>
+      )}
+
+      {/* 导入弹窗 */}
+      {showImportModal && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50">
+          <div className="bg-white rounded-lg w-[90%] max-w-md p-5 shadow-xl">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-lg font-semibold text-gray-900">导入版型数据</h2>
+              <button onClick={closeImportModal} className="text-gray-500 hover:text-gray-700">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              {/* 说明 */}
+              <div className="bg-gray-50 rounded-lg p-3 text-sm text-gray-600">
+                <p className="mb-2 font-medium">JSON文件格式要求：</p>
+                <pre className="text-xs bg-gray-100 p-2 rounded overflow-x-auto">
+{`{
+  "patterns": [
+    {
+      "brand": "宝马",
+      "series": "5系",
+      "year": "2016",
+      "product_type": "软包",
+      "version_no": "BM1127R",
+      "need_guide": true,
+      "guide_condition": "滑轨36cm"
+    }
+  ]
+}`}
+                </pre>
+              </div>
+
+              {/* 上传区域 */}
+              <div 
+                className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-blue-500 transition cursor-pointer"
+                onClick={() => fileInputRef.current?.click()}
+              >
+                <Upload className="w-10 h-10 text-gray-400 mx-auto mb-2" />
+                <p className="text-sm text-gray-600">
+                  {importing ? '正在导入...' : '点击选择JSON文件'}
+                </p>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept=".json"
+                  onChange={handleFileSelect}
+                  className="hidden"
+                  disabled={importing}
+                />
+              </div>
+
+              {/* 导入结果 */}
+              {importResult && (
+                <div className={`rounded-lg p-3 flex items-center gap-2 ${importResult.success ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'}`}>
+                  {importResult.success ? (
+                    <CheckCircle className="w-5 h-5" />
+                  ) : (
+                    <AlertCircle className="w-5 h-5" />
+                  )}
+                  <span className="text-sm">{importResult.message}</span>
+                </div>
+              )}
+
+              {/* 警告提示 */}
+              <div className="bg-yellow-50 rounded-lg p-3 flex items-start gap-2 text-yellow-700">
+                <AlertCircle className="w-5 h-5 mt-0.5" />
+                <div className="text-sm">
+                  <p className="font-medium">注意：</p>
+                  <p>导入将清空现有版型数据，请确保数据正确后再导入。</p>
+                </div>
+              </div>
+
+              {/* 关闭按钮 */}
+              <button
+                onClick={closeImportModal}
+                disabled={importing}
+                className="w-full bg-gray-100 text-gray-700 rounded-lg py-2 font-medium hover:bg-gray-200 disabled:opacity-50"
+              >
+                关闭
+              </button>
+            </div>
+          </div>
         </div>
       )}
 

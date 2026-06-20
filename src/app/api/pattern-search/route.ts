@@ -16,17 +16,17 @@ export async function GET(request: NextRequest) {
     const year = searchParams.get('year') || '';
     const type = searchParams.get('type') || '';
 
-    // 构建查询条件
+    // 构建查询条件（支持模糊匹配）
     let sql = 'SELECT * FROM patterns WHERE 1=1';
     const params: string[] = [];
 
     if (brand) {
-      sql += ' AND brand = ?';
-      params.push(brand);
+      sql += ' AND brand LIKE ?';
+      params.push(`%${brand}%`);
     }
     if (series) {
-      sql += ' AND series = ?';
-      params.push(series);
+      sql += ' AND series LIKE ?';
+      params.push(`%${series}%`);
     }
     if (year) {
       sql += ' AND year = ?';
