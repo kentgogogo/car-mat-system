@@ -13,13 +13,14 @@ interface PatternData {
 
 interface BatchImportRequest {
   patterns: PatternData[];
+  clear_existing?: boolean; // 是否清空现有数据，默认 false（追加模式）
 }
 
 // POST: 批量导入版型数据
 export async function POST(request: NextRequest) {
   try {
     const body: BatchImportRequest = await request.json();
-    const { patterns } = body;
+    const { patterns, clear_existing = false } = body;
 
     if (!patterns || !Array.isArray(patterns) || patterns.length === 0) {
       return NextResponse.json(
@@ -40,12 +41,17 @@ export async function POST(request: NextRequest) {
     }
 
     try {
+      // 获取当前数据总量
+      const currentCount = db.prepare('SELECT COUNT(*) as count FROM patterns').get() as { count: number };
+      
       // 使用事务确保原子性
-      const insertMany = db.transaction((patterns: PatternData[]) => {
-        // 清空现有数据
-        db.exec('DELETE FROM patterns');
+      const insertMany = db.transaction((patterns: PatternData[], clear: boolean) => {
+        // 仅当 clear_existing=true 时才清空现有数据
+        if (clear) {
+          db.exec('DELETE FROM patterns');
+        }
         
-        // 批量插入新数据
+        // 批量插入新数据（追加模式）
         const insertStmt = db.prepare(`
           INSERT INTO patterns (brand, series, year, product_type, version_no, need_guide, guide_condition)
           VALUES (?, ?, ?, ?, ?, ?, ?)
@@ -66,12 +72,20 @@ export async function POST(request: NextRequest) {
         return patterns.length;
       });
 
-      const count = insertMany(patterns);
+      const insertedCount = insertMany(patterns, clear_existing);
+      
+      // 获取导入后的数据总量
+      const newCount = db.prepare('SELECT COUNT(*) as count FROM patterns').get() as { count: number };
       
       return NextResponse.json({
         success: true,
-        count: count,
-        message: `成功导入 ${count} 条版型数据`
+        count: insertedCount,
+        previous_count: currentCount.count,
+        total_count: newCount.count,
+        mode: clear_existing ? '覆盖' : '追加',
+        message: clear_existing 
+          ? `已清空原有数据，成功导入 ${insertedCount} 条版型数据，当前共 ${newCount.count} 条`
+          : `追加成功，新增 ${insertedCount} 条版型数据，当前共 ${newCount.count} 条`
       });
     } catch (dbError) {
       console.error('数据库操作失败:', dbError);
