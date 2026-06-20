@@ -28,6 +28,7 @@ interface QueryLog {
   id: number;
   vehicle_model: string;
   year: string;
+  vin_code: string | null;
   product_type: string;
   pattern_code: string;
   guide_info: string | null;
@@ -51,6 +52,7 @@ export default function TodayQueryPage() {
   const [formData, setFormData] = useState({
     vehicle_model: '',
     year: '',
+    vin_code: '',
     product_type: '脚垫',
     pattern_code: '',
     guide_info: '',
@@ -96,6 +98,7 @@ export default function TodayQueryPage() {
         setFormData({
           vehicle_model: '',
           year: '',
+          vin_code: '',
           product_type: '脚垫',
           pattern_code: '',
           guide_info: '',
@@ -180,6 +183,16 @@ export default function TodayQueryPage() {
                   />
                 </div>
                 <div className="space-y-2">
+                  <Label htmlFor="vin_code">VIN码后四位（可选）</Label>
+                  <Input
+                    id="vin_code"
+                    placeholder="如：1234"
+                    maxLength={4}
+                    value={formData.vin_code}
+                    onChange={(e) => setFormData({ ...formData, vin_code: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-2">
                   <Label htmlFor="product_type">产品类型</Label>
                   <Select
                     value={formData.product_type}
@@ -255,9 +268,10 @@ export default function TodayQueryPage() {
                     </div>
                     <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm text-gray-600">
                       <div>年款：{log.year}</div>
+                      <div>VIN后四位：{log.vin_code || '-'}</div>
                       <div>产品：{log.product_type}</div>
                       <div>版型号：{log.pattern_code}</div>
-                      <div>时间：{formatTime(log.query_time)}</div>
+                      <div className="col-span-2">时间：{formatTime(log.query_time)}</div>
                     </div>
                     {log.guide_info && (
                       <div className="mt-1 text-sm text-orange-600 bg-orange-50 px-2 py-1 rounded">

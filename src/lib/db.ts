@@ -92,6 +92,7 @@ db.exec(`
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     vehicle_model TEXT NOT NULL,
     year TEXT NOT NULL,
+    vin_code TEXT,
     product_type TEXT NOT NULL,
     pattern_code TEXT NOT NULL,
     guide_info TEXT,
@@ -111,6 +112,23 @@ db.exec(`
   CREATE INDEX IF NOT EXISTS idx_query_logs_date ON query_logs(query_date);
   CREATE INDEX IF NOT EXISTS idx_query_logs_pattern_code ON query_logs(pattern_code);
 `);
+
+// 为已存在的 query_logs 表添加 vin_code 列（如果不存在）
+try {
+  db.exec(`ALTER TABLE query_logs ADD COLUMN vin_code TEXT`);
+} catch (e) {
+  // 列已存在，忽略错误
+}
+
+// 创建 vin_code 索引
+db.exec(`CREATE INDEX IF NOT EXISTS idx_query_logs_vin_code ON query_logs(vin_code)`);
+
+// 为已存在的 orders 表添加 vin_code 列（如果不存在）
+try {
+  db.exec(`ALTER TABLE orders ADD COLUMN vin_code TEXT`);
+} catch (e) {
+  // 列已存在，忽略错误
+}
 
 // 初始化工人数据
 const workerCount = db.prepare('SELECT COUNT(*) as count FROM workers').get() as { count: number };

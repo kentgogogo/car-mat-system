@@ -14,7 +14,7 @@ export async function GET(request: NextRequest) {
     
     // 获取今日所有查询记录
     const logs = db.prepare(`
-      SELECT id, vehicle_model, year, product_type, pattern_code, guide_info, query_time
+      SELECT id, vehicle_model, year, vin_code, product_type, pattern_code, guide_info, query_time
       FROM query_logs
       WHERE query_date = ?
       ORDER BY query_time DESC
@@ -22,31 +22,45 @@ export async function GET(request: NextRequest) {
       id: number;
       vehicle_model: string;
       year: string;
+      vin_code: string | null;
       product_type: string;
       pattern_code: string;
       guide_info: string | null;
       query_time: string;
     }>;
     
-    // 获取今日所有订单的版型号
+    // 获取今日所有订单的版型号和VIN码
     const todayOrders = db.prepare(`
-      SELECT DISTINCT version_no
+      SELECT DISTINCT version_no, vin_code
       FROM orders
       WHERE date = ?
-    `).all(today) as Array<{ version_no: string }>;
+    `).all(today) as Array<{ version_no: string; vin_code: string | null }>;
     
-    const orderedPatternCodes = new Set(todayOrders.map(o => o.version_no));
+    // 添加订单状态：检查是否有相同 pattern_code AND vin_code 的订单
+    // 如果 vin_code 为空，则只按 pattern_code 匹配
+    const logsWithStatus = logs.map(log => {
+      let hasOrder = false;
+      
+      if (log.vin_code) {
+        // 有 VIN 码时，需要匹配 pattern_code AND vin_code
+        hasOrder = todayOrders.some(o => 
+          o.version_no === log.pattern_code && o.vin_code === log.vin_code
+        );
+      } else {
+        // 无 VIN 码时，只匹配 pattern_code
+        hasOrder = todayOrders.some(o => o.version_no === log.pattern_code);
+      }
+      
+      return {
+        ...log,
+        order_status: hasOrder ? '已下单' : '未下单'
+      };
+    });
     
     // 计算统计
     const totalCount = logs.length;
-    const orderedCount = logs.filter(log => orderedPatternCodes.has(log.pattern_code)).length;
+    const orderedCount = logsWithStatus.filter(log => log.order_status === '已下单').length;
     const unorderedCount = totalCount - orderedCount;
-    
-    // 添加订单状态
-    const logsWithStatus = logs.map(log => ({
-      ...log,
-      order_status: orderedPatternCodes.has(log.pattern_code) ? '已下单' : '未下单'
-    }));
     
     return NextResponse.json({
       success: true,
@@ -70,7 +84,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { vehicle_model, year, product_type, pattern_code, guide_info } = body;
+    const { vehicle_model, year, vin_code, product_type, pattern_code, guide_info } = body;
     
     if (!vehicle_model || !year || !product_type || !pattern_code) {
       return NextResponse.json(
@@ -81,11 +95,11 @@ export async function POST(request: NextRequest) {
     
     const today = getTodayDate();
     
-    // 插入查询记录
+    // 插入查询记录（vin_code 可选）
     const result = db.prepare(`
-      INSERT INTO query_logs (vehicle_model, year, product_type, pattern_code, guide_info, query_date)
-      VALUES (?, ?, ?, ?, ?, ?)
-    `).run(vehicle_model, year, product_type, pattern_code, guide_info || null, today);
+      INSERT INTO query_logs (vehicle_model, year, vin_code, product_type, pattern_code, guide_info, query_date)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
+    `).run(vehicle_model, year, vin_code || null, product_type, pattern_code, guide_info || null, today);
     
     return NextResponse.json({
       success: true,
