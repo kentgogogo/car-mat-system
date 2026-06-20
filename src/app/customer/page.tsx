@@ -8,7 +8,8 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { Users, Search, ChevronRight, Package, ClipboardList, Home, Plus, List, Factory, MoreHorizontal, Upload, X, Truck, DollarSign, MessageSquare } from 'lucide-react';
+import { Users, Search, ChevronRight, Upload, X, Truck, DollarSign, MessageSquare } from 'lucide-react';
+import BottomNav from '@/components/BottomNav';
 import { toast } from 'sonner';
 
 interface Customer {
@@ -284,34 +285,7 @@ function CustomerPageContent() {
       )}
 
       {/* 底部导航 */}
-      <nav className="fixed bottom-0 left-0 right-0 bg-white border-t shadow-lg">
-        <div className="grid grid-cols-6 h-12">
-          <Link href="/" className="flex flex-col items-center justify-center text-gray-600">
-            <Home className="w-5 h-5" />
-            <span className="text-xs mt-1">首页</span>
-          </Link>
-          <Link href="/order/new" className="flex flex-col items-center justify-center text-gray-600">
-            <Plus className="w-5 h-5" />
-            <span className="text-xs mt-1">下单</span>
-          </Link>
-          <Link href="/order/list" className="flex flex-col items-center justify-center text-gray-600">
-            <List className="w-5 h-5" />
-            <span className="text-xs mt-1">订单</span>
-          </Link>
-          <Link href="/production" className="flex flex-col items-center justify-center text-gray-600">
-            <Factory className="w-5 h-5" />
-            <span className="text-xs mt-1">生产</span>
-          </Link>
-          <Link href="/today-query" className="flex flex-col items-center justify-center text-gray-600">
-            <ClipboardList className="w-5 h-5" />
-            <span className="text-xs mt-1">今日</span>
-          </Link>
-          <Link href="/more" className="flex flex-col items-center justify-center text-gray-600">
-            <MoreHorizontal className="w-5 h-5" />
-            <span className="text-xs mt-1">更多</span>
-          </Link>
-        </div>
-      </nav>
+      <BottomNav current="more" />
     </div>
   );
 }

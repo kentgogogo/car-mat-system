@@ -22,7 +22,8 @@ import {
   DialogTrigger,
   DialogFooter,
 } from '@/components/ui/dialog';
-import { Search, Plus, ClipboardList, ShoppingBag, XCircle, RefreshCw, Home, FileText, Wrench, Users, BarChart3 } from 'lucide-react';
+import { Search, Plus, ShoppingBag, XCircle, RefreshCw, FileText, Wrench, Users, BarChart3, ClipboardList } from 'lucide-react';
+import BottomNav from '@/components/BottomNav';
 
 interface QueryLog {
   id: number;
@@ -287,34 +288,7 @@ export default function TodayQueryPage() {
       </div>
 
       {/* 底部导航栏 */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white border-t shadow-lg">
-        <div className="grid grid-cols-6 py-2">
-          <Link href="/" className="flex flex-col items-center text-gray-600 hover:text-blue-500">
-            <Home className="w-5 h-5" />
-            <span className="text-xs mt-1">首页</span>
-          </Link>
-          <Link href="/order/new" className="flex flex-col items-center text-gray-600 hover:text-blue-500">
-            <FileText className="w-5 h-5" />
-            <span className="text-xs mt-1">下单</span>
-          </Link>
-          <Link href="/order/list" className="flex flex-col items-center text-gray-600 hover:text-blue-500">
-            <Search className="w-5 h-5" />
-            <span className="text-xs mt-1">订单</span>
-          </Link>
-          <Link href="/production" className="flex flex-col items-center text-gray-600 hover:text-blue-500">
-            <Wrench className="w-5 h-5" />
-            <span className="text-xs mt-1">生产</span>
-          </Link>
-          <Link href="/today-query" className="flex flex-col items-center text-blue-500">
-            <ClipboardList className="w-5 h-5" />
-            <span className="text-xs mt-1 font-bold">今日</span>
-          </Link>
-          <Link href="/more" className="flex flex-col items-center text-gray-600 hover:text-blue-500">
-            <BarChart3 className="w-5 h-5" />
-            <span className="text-xs mt-1">更多</span>
-          </Link>
-        </div>
-      </div>
+      <BottomNav current="shipping" />
     </div>
   );
 }
