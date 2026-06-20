@@ -19,7 +19,7 @@ export async function GET(request: NextRequest) {
       LEFT JOIN production p ON w.name = p.worker_name 
         AND strftime('%Y-%m', p.complete_time) = ?
       GROUP BY w.id
-      ORDER BY piece_count DESC
+      ORDER BY w.name ASC
     `);
     stmt.bind([month]);
     const stats = queryResult(stmt);

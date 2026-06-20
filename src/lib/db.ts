@@ -175,12 +175,21 @@ function initTables(database: SqlJsDatabase) {
     database.run('INSERT INTO config (key, value) VALUES (?, ?)', ['password', 'hc123456']);
   }
 
-  // 初始化工人数据
+  // 初始化工人数据（3个车工）
   const workersCount = database.exec('SELECT COUNT(*) FROM workers')[0]?.values[0]?.[0] || 0;
   if (workersCount === 0) {
-    const workers = ['张师傅', '王师傅', '李师傅', '赵师傅', '刘师傅', '陈师傅'];
-    workers.forEach(name => {
-      database.run('INSERT INTO workers (name, price_per_piece) VALUES (?, 50)', [name]);
+    // 3个车工人员，设置默认工价
+    const workers = [
+      { name: '黄姐', sewing_full: 16, sewing_half: 8, sewing_quarter: 4 },
+      { name: '雨婷', sewing_full: 16, sewing_half: 8, sewing_quarter: 4 },
+      { name: '阿霞', sewing_full: 16, sewing_half: 8, sewing_quarter: 4 }
+    ];
+    workers.forEach(w => {
+      database.run(`
+        INSERT INTO workers (name, price_per_piece, sewing_full, sewing_half, sewing_quarter, 
+        embroidery_full, embroidery_half, embroidery_tail) 
+        VALUES (?, 50, ?, ?, ?, 8, 4, 4)
+      `, [w.name, w.sewing_full, w.sewing_half, w.sewing_quarter]);
     });
   }
 
