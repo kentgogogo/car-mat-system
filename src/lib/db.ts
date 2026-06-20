@@ -87,14 +87,29 @@ db.exec(`
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
   );
 
+  -- 查询记录表
+  CREATE TABLE IF NOT EXISTS query_logs (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    vehicle_model TEXT NOT NULL,
+    year TEXT NOT NULL,
+    product_type TEXT NOT NULL,
+    pattern_code TEXT NOT NULL,
+    guide_info TEXT,
+    query_time DATETIME DEFAULT CURRENT_TIMESTAMP,
+    query_date TEXT NOT NULL
+  );
+
   -- 创建索引
   CREATE INDEX IF NOT EXISTS idx_orders_date ON orders(date);
   CREATE INDEX IF NOT EXISTS idx_orders_customer ON orders(customer_name);
   CREATE INDEX IF NOT EXISTS idx_orders_status ON orders(status);
+  CREATE INDEX IF NOT EXISTS idx_orders_version_no ON orders(version_no);
   CREATE INDEX IF NOT EXISTS idx_production_order ON production(order_no);
   CREATE INDEX IF NOT EXISTS idx_patterns_brand ON patterns(brand);
   CREATE INDEX IF NOT EXISTS idx_patterns_series ON patterns(series);
   CREATE INDEX IF NOT EXISTS idx_patterns_year ON patterns(year);
+  CREATE INDEX IF NOT EXISTS idx_query_logs_date ON query_logs(query_date);
+  CREATE INDEX IF NOT EXISTS idx_query_logs_pattern_code ON query_logs(pattern_code);
 `);
 
 // 初始化工人数据

@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, Edit, Trash2, Package, FileSearch, Home, Plus, List, Factory, MoreHorizontal } from 'lucide-react';
+import { ArrowLeft, Edit, Trash2, Package, ClipboardList, Home, Plus, List, Factory, MoreHorizontal } from 'lucide-react';
 import { formatCurrency } from '@/lib/utils';
 import { toast } from 'sonner';
 
@@ -289,9 +289,9 @@ export default function OrderDetailPage() {
             <Factory className="w-5 h-5" />
             <span className="text-xs mt-1">生产</span>
           </Link>
-          <Link href="/pattern-search" className="flex flex-col items-center justify-center text-gray-600">
-            <FileSearch className="w-5 h-5" />
-            <span className="text-xs mt-1">版型</span>
+          <Link href="/today-query" className="flex flex-col items-center justify-center text-gray-600">
+            <ClipboardList className="w-5 h-5" />
+            <span className="text-xs mt-1">今日</span>
           </Link>
           <Link href="/more" className="flex flex-col items-center justify-center text-gray-600">
             <MoreHorizontal className="w-5 h-5" />

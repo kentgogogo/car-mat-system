@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import { Package, DollarSign, Calendar, TrendingUp, Plus, List, Factory, Users, FileSearch } from 'lucide-react';
+import { Package, DollarSign, Calendar, TrendingUp, Plus, List, Factory, Users, ClipboardList } from 'lucide-react';
 import { formatCurrency } from '@/lib/utils';
 
 interface Stats {
@@ -177,10 +177,10 @@ export default function HomePage() {
                 <span className="text-xs">生产</span>
               </Button>
             </Link>
-            <Link href="/pattern-search">
+            <Link href="/today-query">
               <Button variant="outline" className="w-full h-12 flex flex-col items-center gap-1">
-                <FileSearch className="w-5 h-5 text-blue-600" />
-                <span className="text-xs">版型</span>
+                <ClipboardList className="w-5 h-5 text-blue-600" />
+                <span className="text-xs">今日</span>
               </Button>
             </Link>
             <Link href="/customer">
@@ -212,9 +212,9 @@ export default function HomePage() {
             <Factory className="w-5 h-5" />
             <span className="text-xs mt-1">生产</span>
           </Link>
-          <Link href="/pattern-search" className="flex flex-col items-center justify-center text-gray-600">
-            <FileSearch className="w-5 h-5" />
-            <span className="text-xs mt-1">版型</span>
+          <Link href="/today-query" className="flex flex-col items-center justify-center text-gray-600">
+            <ClipboardList className="w-5 h-5" />
+            <span className="text-xs mt-1">今日</span>
           </Link>
           <Link href="/more" className="flex flex-col items-center justify-center text-gray-600">
             <TrendingUp className="w-5 h-5" />

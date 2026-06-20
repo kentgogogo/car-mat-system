@@ -9,7 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
-import { ArrowLeft, CheckCircle, Package, FileSearch, Home, Plus, List, Factory, MoreHorizontal } from 'lucide-react';
+import { ArrowLeft, CheckCircle, Package, ClipboardList, Home, Plus, List, Factory, MoreHorizontal } from 'lucide-react';
 import { toast } from 'sonner';
 
 const logisticsOptions = [
@@ -465,9 +465,9 @@ export default function EditOrderPage() {
             <Factory className="w-5 h-5" />
             <span className="text-xs mt-1">生产</span>
           </Link>
-          <Link href="/pattern-search" className="flex flex-col items-center justify-center text-gray-600">
-            <FileSearch className="w-5 h-5" />
-            <span className="text-xs mt-1">版型</span>
+          <Link href="/today-query" className="flex flex-col items-center justify-center text-gray-600">
+            <ClipboardList className="w-5 h-5" />
+            <span className="text-xs mt-1">今日</span>
           </Link>
           <Link href="/more" className="flex flex-col items-center justify-center text-gray-600">
             <MoreHorizontal className="w-5 h-5" />

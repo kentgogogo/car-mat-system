@@ -15,7 +15,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Factory, QrCode, Package, FileSearch, Home, Plus, List, MoreHorizontal, Search, Eye, X } from 'lucide-react';
+import { Factory, QrCode, Package, ClipboardList, Home, Plus, List, MoreHorizontal, Search, Eye, X } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface Production {
@@ -520,9 +520,9 @@ export default function ProductionPage() {
             <Factory className="w-5 h-5" />
             <span className="text-xs mt-1">生产</span>
           </Link>
-          <Link href="/pattern-search" className="flex flex-col items-center justify-center text-gray-600">
-            <FileSearch className="w-5 h-5" />
-            <span className="text-xs mt-1">版型</span>
+          <Link href="/today-query" className="flex flex-col items-center justify-center text-gray-600">
+            <ClipboardList className="w-5 h-5" />
+            <span className="text-xs mt-1">今日</span>
           </Link>
           <Link href="/more" className="flex flex-col items-center justify-center text-gray-600">
             <MoreHorizontal className="w-5 h-5" />
