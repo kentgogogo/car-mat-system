@@ -89,6 +89,12 @@
     "tsx": "^4.21.0",
     "typescript": "^5"
   },
+  "pnpm": {
+    "overrides": {
+      "better-sqlite3": "npm:sql.js@1.14.1",
+      "sharp": "npm:empty-npm-package@1.0.0"
+    }
+  },
   "packageManager": "pnpm@9.0.0",
   "engines": {
     "pnpm": ">=9.0.0"
