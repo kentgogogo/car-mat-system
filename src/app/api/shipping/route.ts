@@ -8,11 +8,13 @@ export async function GET() {
     // 查询已发货状态的订单
     const stmt = db.prepare(`
       SELECT 
+        id,
         order_no,
         date,
         customer_name,
         customer_phone,
         logistics,
+        tracking_no,
         payment_status,
         brand,
         model,
@@ -32,11 +34,13 @@ export async function GET() {
     
     // 格式化数据
     const shippingList = orders.map(order => ({
+      id: order.id,
       order_no: order.order_no,
       date: order.date,
       customer_name: order.customer_name || '',
       customer_phone: order.customer_phone || '',
       logistics: order.logistics || '',
+      tracking_no: order.tracking_no || '',
       is_collect: order.payment_status === '代收' ? '是' : '否',
       vehicle: `${order.brand || ''} ${order.model || ''} ${order.year_style || ''}`.trim(),
       lower_material: order.lower_material || '',

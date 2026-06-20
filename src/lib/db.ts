@@ -149,6 +149,7 @@ function initTables(database: SqlJsDatabase) {
   addColumnIfNotExists('orders', 'embroidery_type', 'TEXT DEFAULT \'无\'');
   addColumnIfNotExists('orders', 'sewing_fee', 'INTEGER DEFAULT 0');
   addColumnIfNotExists('orders', 'embroidery_fee', 'INTEGER DEFAULT 0');
+  addColumnIfNotExists('orders', 'tracking_no', 'TEXT');
 
   // customers 表新字段
   addColumnIfNotExists('customers', 'logistics', 'TEXT');
