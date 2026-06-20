@@ -6,7 +6,10 @@ import Link from 'next/link';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Users, Search, ChevronRight, Package, ClipboardList, Home, Plus, List, Factory, MoreHorizontal } from 'lucide-react';
+import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
+import { Users, Search, ChevronRight, Package, ClipboardList, Home, Plus, List, Factory, MoreHorizontal, Upload, X } from 'lucide-react';
+import { toast } from 'sonner';
 
 interface Customer {
   id: number;
@@ -21,6 +24,11 @@ export default function CustomerPage() {
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [loading, setLoading] = useState(true);
   const [keyword, setKeyword] = useState('');
+  
+  // 批量导入相关状态
+  const [showImportModal, setShowImportModal] = useState(false);
+  const [importText, setImportText] = useState('');
+  const [importing, setImporting] = useState(false);
 
   useEffect(() => {
     fetchCustomers();
@@ -41,6 +49,66 @@ export default function CustomerPage() {
 
   const handleSearch = () => {
     fetchCustomers();
+  };
+
+  // 解析导入文本
+  const parseImportText = (text: string) => {
+    const lines = text.trim().split('\n');
+    const customers: Array<{ name: string; phone?: string }> = [];
+    
+    for (const line of lines) {
+      const trimmedLine = line.trim();
+      if (!trimmedLine) continue;
+      
+      // 支持两种格式：
+      // 1. 姓名,电话（逗号分隔）
+      // 2. 姓名 电话（空格分隔）
+      // 3. 仅姓名
+      const parts = trimmedLine.split(/[,\s]+/);
+      if (parts.length >= 1) {
+        const name = parts[0].trim();
+        const phone = parts.length >= 2 ? parts[1].trim() : undefined;
+        if (name) {
+          customers.push({ name, phone });
+        }
+      }
+    }
+    
+    return customers;
+  };
+
+  // 执行批量导入
+  const handleImport = async () => {
+    const customersToImport = parseImportText(importText);
+    
+    if (customersToImport.length === 0) {
+      toast.error('请输入有效的客户数据');
+      return;
+    }
+    
+    setImporting(true);
+    try {
+      const res = await fetch('/api/customer/batch', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ customers: customersToImport }),
+      });
+      
+      const data = await res.json();
+      
+      if (data.success) {
+        toast.success(data.message);
+        setShowImportModal(false);
+        setImportText('');
+        fetchCustomers(); // 刷新列表
+      } else {
+        toast.error(data.error || '导入失败');
+      }
+    } catch (error) {
+      toast.error('导入失败，请重试');
+    } finally {
+      setImporting(false);
+    }
   };
 
   return (
@@ -65,6 +133,14 @@ export default function CustomerPage() {
             className="h-9"
           >
             <Search className="w-4 h-4" />
+          </Button>
+          <Button
+            onClick={() => setShowImportModal(true)}
+            size="sm"
+            variant="outline"
+            className="h-9"
+          >
+            <Upload className="w-4 h-4" />
           </Button>
         </div>
       </div>
@@ -102,6 +178,76 @@ export default function CustomerPage() {
           ))
         )}
       </div>
+
+      {/* 批量导入模态框 */}
+      {showImportModal && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-lg w-full max-w-md max-h-[80vh] overflow-auto">
+            {/* 模态框标题 */}
+            <div className="flex items-center justify-between px-4 py-3 border-b">
+              <h2 className="font-semibold">批量导入客户</h2>
+              <button 
+                onClick={() => setShowImportModal(false)}
+                className="text-gray-500 hover:text-gray-700"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            
+            {/* 模态框内容 */}
+            <div className="px-4 py-4 space-y-4">
+              <div>
+                <Label className="text-sm">客户数据</Label>
+                <Textarea 
+                  value={importText}
+                  onChange={e => setImportText(e.target.value)}
+                  placeholder="每行一个客户，格式：姓名,电话 或 姓名 电话"
+                  className="mt-2 min-h-[150px]"
+                  rows={6}
+                />
+                <p className="text-xs text-gray-500 mt-2">
+                  示例：张三,13800138000<br />
+                  李四 13900139000<br />
+                  王五（仅姓名）
+                </p>
+              </div>
+              
+              {/* 解析预览 */}
+              {importText.trim() && (
+                <div className="bg-gray-50 rounded-md p-3">
+                  <p className="text-sm text-gray-500 mb-2">识别到 {parseImportText(importText).length} 个客户</p>
+                  <div className="text-xs text-gray-600 space-y-1 max-h-[100px] overflow-auto">
+                    {parseImportText(importText).slice(0, 10).map((c, i) => (
+                      <div key={i}>{c.name} {c.phone ? `(${c.phone})` : ''}</div>
+                    ))}
+                    {parseImportText(importText).length > 10 && (
+                      <div className="text-gray-400">...还有 {parseImportText(importText).length - 10} 个</div>
+                    )}
+                  </div>
+                </div>
+              )}
+              
+              {/* 提交按钮 */}
+              <div className="flex gap-2">
+                <Button 
+                  variant="outline" 
+                  onClick={() => setShowImportModal(false)}
+                  className="flex-1"
+                >
+                  取消
+                </Button>
+                <Button 
+                  onClick={handleImport}
+                  disabled={importing || !importText.trim()}
+                  className="flex-1"
+                >
+                  {importing ? '导入中...' : '确认导入'}
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* 底部导航 */}
       <nav className="fixed bottom-0 left-0 right-0 bg-white border-t shadow-lg">

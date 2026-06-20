@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, Suspense } from 'react';
+import { useEffect, useState, Suspense, useRef, useCallback } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { Card, CardContent } from '@/components/ui/card';
@@ -36,9 +36,11 @@ function OrderListContent() {
     status: searchParams.get('status') || '全部',
     date: searchParams.get('date') || '',
   });
+  
+  const pollingRef = useRef<NodeJS.Timeout | null>(null);
 
-  const fetchOrders = async () => {
-    setLoading(true);
+  const fetchOrders = useCallback(async (showLoading = true) => {
+    if (showLoading) setLoading(true);
     try {
       const params = new URLSearchParams();
       if (filters.customer) params.append('customer', filters.customer);
@@ -51,13 +53,24 @@ function OrderListContent() {
     } catch (error) {
       console.error('获取订单列表失败:', error);
     } finally {
-      setLoading(false);
+      if (showLoading) setLoading(false);
     }
-  };
+  }, [filters]);
 
   useEffect(() => {
-    fetchOrders();
-  }, [filters]);
+    // 初始加载
+    fetchOrders(true);
+    
+    // 设置轮询，每30秒刷新一次（不显示loading状态）
+    pollingRef.current = setInterval(() => fetchOrders(false), 30000);
+    
+    // 清理定时器
+    return () => {
+      if (pollingRef.current) {
+        clearInterval(pollingRef.current);
+      }
+    };
+  }, [fetchOrders]);
 
   const handleReset = () => {
     setFilters({

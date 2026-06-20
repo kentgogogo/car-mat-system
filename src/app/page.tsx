@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -24,12 +24,32 @@ export default function HomePage() {
     monthSales: 0,
     dailyOrders: [],
   });
+  
+  const pollingRef = useRef<NodeJS.Timeout | null>(null);
+
+  const fetchStats = async () => {
+    try {
+      const res = await fetch('/api/stats');
+      const data = await res.json();
+      setStats(data);
+    } catch (err) {
+      console.error('获取统计数据失败:', err);
+    }
+  };
 
   useEffect(() => {
-    fetch('/api/stats')
-      .then(res => res.json())
-      .then(data => setStats(data))
-      .catch(err => console.error('获取统计数据失败:', err));
+    // 初始加载
+    fetchStats();
+    
+    // 设置轮询，每30秒刷新一次
+    pollingRef.current = setInterval(fetchStats, 30000);
+    
+    // 清理定时器
+    return () => {
+      if (pollingRef.current) {
+        clearInterval(pollingRef.current);
+      }
+    };
   }, []);
 
   // 格式化日期显示
