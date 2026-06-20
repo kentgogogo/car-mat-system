@@ -23,6 +23,11 @@ interface Order {
   year_style: string;
   product_type: string;
   version_no: string;
+  line_mark: string;
+  set_type: string;
+  embroidery_type: string;
+  sewing_fee: number;
+  embroidery_fee: number;
   lower_material: string;
   upper_material: string;
   craft: string;
@@ -209,6 +214,9 @@ function OrderDetailContent() {
             <div className="grid grid-cols-2 gap-2 text-sm">
               <div><span className="text-gray-500">类型：</span>{order.product_type}</div>
               <div><span className="text-gray-500">版型号：</span>{order.version_no || '-'}</div>
+              <div><span className="text-gray-500">划线：</span>{order.line_mark || '-'}</div>
+              <div><span className="text-gray-500">套数类型：</span>{order.set_type || '全套'}</div>
+              <div><span className="text-gray-500">绣线：</span>{order.embroidery_type || '无'}</div>
               <div><span className="text-gray-500">下层材料：</span>{order.lower_material || '-'}</div>
               <div><span className="text-gray-500">上层材料：</span>{order.upper_material || '-'}</div>
               <div><span className="text-gray-500">工艺：</span>{order.craft || '-'}</div>
@@ -230,6 +238,33 @@ function OrderDetailContent() {
               <div><span className="text-gray-500">单价：</span>{formatCurrency(order.unit_price)}</div>
               <div className="font-bold text-blue-600">
                 <span className="text-gray-500">总价：</span>{formatCurrency(order.total_price)}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* 工价信息 */}
+        <Card className="shadow-sm">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base">工价信息</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            <div className="p-3 bg-green-50 rounded-md">
+              <div className="grid grid-cols-2 gap-4 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-gray-500">车工费：</span>
+                  <span className="font-medium text-green-600">{formatCurrency(order.sewing_fee || 0)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-500">绣线费：</span>
+                  <span className="font-medium text-green-600">{formatCurrency(order.embroidery_fee || 0)}</span>
+                </div>
+              </div>
+              <div className="flex justify-between mt-2 pt-2 border-t border-green-200">
+                <span className="text-gray-600">合计工费：</span>
+                <span className="font-bold text-green-600">
+                  {formatCurrency((order.sewing_fee || 0) + (order.embroidery_fee || 0))}
+                </span>
               </div>
             </div>
           </CardContent>

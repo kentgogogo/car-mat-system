@@ -15,6 +15,9 @@ import { toast } from 'sonner';
 interface Customer {
   name: string;
   phone: string;
+  logistics: string;
+  is_collect: string;
+  remark: string;
 }
 
 const logisticsOptions = [
@@ -28,6 +31,31 @@ const craftOptions = ['双针', '三针', '拼接'];
 const auxiliaryOptions = ['普通扣', '魔术扣'];
 const tailMatOptions = ['有', '无'];
 const paymentOptions = ['代收', '已付', '未付'];
+const setTypeOptions = ['全套', '半套', '四分之一套'];
+const embroideryTypeOptions = ['无', '永恒', '穿梭', '群图'];
+
+// 工价计算
+const calculateFees = (productType: string, setType: string, embroideryType: string) => {
+  const sewingPrices: Record<string, Record<string, number>> = {
+    '软包': { '全套': 16, '半套': 8, '四分之一套': 4 },
+    '脚垫': { '全套': 6, '半套': 3, '四分之一套': 2 }
+  };
+
+  const softEmbroideryBySet: Record<string, number> = {
+    '全套': 8,
+    '半套': 4,
+    '四分之一套': 4
+  };
+
+  const sewingFee = sewingPrices[productType]?.[setType] || 0;
+  let embroideryFee = 0;
+  
+  if (embroideryType !== '无' && productType === '软包') {
+    embroideryFee = softEmbroideryBySet[setType] || 0;
+  }
+
+  return { sewingFee, embroideryFee };
+};
 
 export default function NewOrderPage() {
   const router = useRouter();
@@ -46,6 +74,9 @@ export default function NewOrderPage() {
     year_style: '',
     product_type: '脚垫',
     version_no: '',
+    line_mark: '',
+    set_type: '全套',
+    embroidery_type: '无',
     lower_material: '',
     upper_material: '',
     craft: '双针',
@@ -57,6 +88,9 @@ export default function NewOrderPage() {
     payment_status: '未付',
     remark: '',
   });
+
+  // 计算工价
+  const fees = calculateFees(formData.product_type, formData.set_type, formData.embroidery_type);
 
   // 获取客户联想
   const fetchCustomerSuggestions = async (keyword: string) => {
@@ -81,7 +115,8 @@ export default function NewOrderPage() {
     setFormData(prev => ({
       ...prev,
       customer_name: customer.name,
-      customer_phone: customer.phone,
+      customer_phone: customer.phone || '',
+      logistics: customer.logistics || prev.logistics,
     }));
     setShowSuggestions(false);
   };
@@ -171,7 +206,9 @@ export default function NewOrderPage() {
                       onClick={() => selectCustomer(customer)}
                     >
                       <div className="font-medium">{customer.name}</div>
-                      <div className="text-xs text-gray-500">{customer.phone}</div>
+                      <div className="text-xs text-gray-500">
+                        {customer.phone} {customer.logistics && `| ${customer.logistics}`}
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -283,6 +320,53 @@ export default function NewOrderPage() {
                 placeholder="输入版型号"
                 className="mt-1"
               />
+            </div>
+
+            {/* 划线 */}
+            <div>
+              <Label className="text-sm">划线</Label>
+              <Input 
+                value={formData.line_mark}
+                onChange={e => setFormData(prev => ({ ...prev, line_mark: e.target.value }))}
+                placeholder="输入划线信息"
+                className="mt-1"
+              />
+            </div>
+
+            {/* 套数类型 */}
+            <div>
+              <Label className="text-sm">套数类型</Label>
+              <Select 
+                value={formData.set_type}
+                onValueChange={value => setFormData(prev => ({ ...prev, set_type: value }))}
+              >
+                <SelectTrigger className="mt-1">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {setTypeOptions.map(option => (
+                    <SelectItem key={option} value={option}>{option}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* 绣线 */}
+            <div>
+              <Label className="text-sm">绣线</Label>
+              <Select 
+                value={formData.embroidery_type}
+                onValueChange={value => setFormData(prev => ({ ...prev, embroidery_type: value }))}
+              >
+                <SelectTrigger className="mt-1">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {embroideryTypeOptions.map(option => (
+                    <SelectItem key={option} value={option}>{option}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
             {/* 下层材料 */}
@@ -412,6 +496,19 @@ export default function NewOrderPage() {
                 <span className="text-lg font-bold text-blue-600">
                   ¥{(formData.quantity * formData.unit_price).toFixed(2)}
                 </span>
+              </div>
+            </div>
+
+            {/* 工价计算 */}
+            <div className="p-3 bg-green-50 rounded-md">
+              <div className="text-sm text-gray-600 mb-2">工价计算</div>
+              <div className="flex justify-between text-sm mb-1">
+                <span>车工费</span>
+                <span className="font-medium text-green-600">¥{fees.sewingFee}</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span>绣线费</span>
+                <span className="font-medium text-green-600">¥{fees.embroideryFee}</span>
               </div>
             </div>
 

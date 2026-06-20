@@ -1,13 +1,13 @@
 'use client';
 
 import { useEffect, useState, Suspense, useRef, useCallback } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
-import { Package, Search, Filter, ChevronRight, ClipboardList, Home, Plus, List, Factory, MoreHorizontal } from 'lucide-react';
+import { Package, Search, Filter, ChevronRight, RefreshCw, ClipboardList, Home, Plus, List, Factory, MoreHorizontal } from 'lucide-react';
 import { formatCurrency } from '@/lib/utils';
 
 interface Order {
@@ -18,6 +18,8 @@ interface Order {
   brand: string;
   model: string;
   product_type: string;
+  version_no: string;
+  line_mark: string;
   total_price: number;
   status: string;
   payment_status: string;
@@ -28,9 +30,11 @@ const statusOptions = ['全部', '待裁剪', '待生产', '已完成', '已发�
 function OrderListContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const pathname = usePathname();
   
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [filters, setFilters] = useState({
     customer: searchParams.get('customer') || '',
     status: searchParams.get('status') || '全部',
@@ -38,9 +42,12 @@ function OrderListContent() {
   });
   
   const pollingRef = useRef<NodeJS.Timeout | null>(null);
+  const lastOrderCountRef = useRef<number>(0);
 
   const fetchOrders = useCallback(async (showLoading = true) => {
     if (showLoading) setLoading(true);
+    else setRefreshing(true);
+    
     try {
       const params = new URLSearchParams();
       if (filters.customer) params.append('customer', filters.customer);
@@ -49,11 +56,21 @@ function OrderListContent() {
       
       const res = await fetch(`/api/orders?${params.toString()}`);
       const data = await res.json();
-      setOrders(data.orders || []);
+      const newOrders = data.orders || [];
+      
+      // 检测是否有新订单
+      if (newOrders.length > lastOrderCountRef.current && lastOrderCountRef.current > 0) {
+        // 有新订单，可以显示提示
+        console.log('检测到新订单');
+      }
+      lastOrderCountRef.current = newOrders.length;
+      
+      setOrders(newOrders);
     } catch (error) {
       console.error('获取订单列表失败:', error);
     } finally {
       if (showLoading) setLoading(false);
+      else setRefreshing(false);
     }
   }, [filters]);
 
@@ -71,6 +88,25 @@ function OrderListContent() {
       }
     };
   }, [fetchOrders]);
+
+  // 监听路由变化，从下单页面返回时刷新
+  useEffect(() => {
+    // 当页面重新聚焦时刷新（从下单页面返回时）
+    const handleFocus = () => {
+      fetchOrders(false);
+    };
+    
+    window.addEventListener('focus', handleFocus);
+    
+    return () => {
+      window.removeEventListener('focus', handleFocus);
+    };
+  }, [fetchOrders]);
+
+  // 手动刷新
+  const handleRefresh = () => {
+    fetchOrders(false);
+  };
 
   const handleReset = () => {
     setFilters({
@@ -102,8 +138,17 @@ function OrderListContent() {
   return (
     <div className="min-h-screen bg-gray-50 pb-20">
       {/* 顶部标题 */}
-      <div className="bg-blue-600 text-white px-4 py-4 sticky top-0 z-10">
-        <h1 className="text-lg font-semibold text-center">订单列表</h1>
+      <div className="bg-blue-600 text-white px-4 py-4 sticky top-0 z-10 flex items-center justify-between">
+        <h1 className="text-lg font-semibold text-center flex-1">订单列表</h1>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={handleRefresh}
+          disabled={refreshing}
+          className="text-white hover:bg-blue-700"
+        >
+          <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
+        </Button>
       </div>
 
       {/* 筛选区域 */}
@@ -188,6 +233,16 @@ function OrderListContent() {
                     <span className="text-xs bg-gray-100 px-2 py-1 rounded">
                       {order.product_type}
                     </span>
+                  </div>
+
+                  {/* 版型号和划线 */}
+                  <div className="flex gap-2 text-xs text-gray-500 mb-2">
+                    {order.version_no && (
+                      <span className="bg-blue-50 px-2 py-1 rounded">版号: {order.version_no}</span>
+                    )}
+                    {order.line_mark && (
+                      <span className="bg-purple-50 px-2 py-1 rounded">划线: {order.line_mark}</span>
+                    )}
                   </div>
 
                   {/* 金额和状态 */}

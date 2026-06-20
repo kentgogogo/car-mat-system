@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getDb, safeSave } from '@/lib/db';
+import { getDb, safeSave, queryOne } from '@/lib/db';
 
 export async function POST(request: NextRequest) {
   try {
@@ -24,7 +24,7 @@ export async function POST(request: NextRequest) {
 
     for (const customer of customers) {
       try {
-        const { name, phone } = customer;
+        const { name, phone, logistics, is_collect, remark } = customer;
         
         if (!name || typeof name !== 'string' || name.trim() === '') {
           results.skipped++;
@@ -34,30 +34,46 @@ export async function POST(request: NextRequest) {
 
         const trimmedName = name.trim();
         const trimmedPhone = phone ? String(phone).trim() : null;
+        const trimmedLogistics = logistics ? String(logistics).trim() : null;
+        const trimmedIsCollect = is_collect ? String(is_collect).trim() : '否';
+        const trimmedRemark = remark ? String(remark).trim() : null;
 
         // 检查客户是否已存在
-        const stmt = db.prepare(`
-          SELECT * FROM customers WHERE name = ?
-        `);
+        const stmt = db.prepare('SELECT * FROM customers WHERE name = ?');
         stmt.bind([trimmedName]);
-        const existing = stmt.get() as unknown as { id: number; phone: string | null } | undefined;
+        const existing = queryOne(stmt) as { id: number; phone: string | null; logistics: string | null; is_collect: string | null; remark: string | null } | null;
 
         if (existing) {
-          // 如果提供了电话且与现有不同，则更新
+          // 更新客户信息（如果有新信息）
+          const updateFields: string[] = [];
+          const updateValues: (string | null)[] = [];
+          
           if (trimmedPhone && existing.phone !== trimmedPhone) {
-            db.run(`
-              UPDATE customers SET phone = ? WHERE name = ?
-            `, [trimmedPhone, trimmedName]);
+            updateFields.push('phone = ?');
+            updateValues.push(trimmedPhone);
+          }
+          if (trimmedLogistics && existing.logistics !== trimmedLogistics) {
+            updateFields.push('logistics = ?');
+            updateValues.push(trimmedLogistics);
+          }
+          if (trimmedIsCollect && existing.is_collect !== trimmedIsCollect) {
+            updateFields.push('is_collect = ?');
+            updateValues.push(trimmedIsCollect);
+          }
+          if (trimmedRemark && existing.remark !== trimmedRemark) {
+            updateFields.push('remark = ?');
+            updateValues.push(trimmedRemark);
+          }
+
+          if (updateFields.length > 0) {
+            db.run(`UPDATE customers SET ${updateFields.join(', ')} WHERE name = ?`, [...updateValues, trimmedName]);
             results.updated++;
           } else {
             results.skipped++;
           }
         } else {
           // 新增客户
-          db.run(`
-            INSERT INTO customers (name, phone)
-            VALUES (?, ?)
-          `, [trimmedName, trimmedPhone]);
+          db.run(`INSERT INTO customers (name, phone, logistics, is_collect, remark) VALUES (?, ?, ?, ?, ?)`, [trimmedName, trimmedPhone, trimmedLogistics, trimmedIsCollect, trimmedRemark]);
           results.added++;
         }
       } catch (err) {

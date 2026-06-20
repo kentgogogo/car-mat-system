@@ -28,24 +28,44 @@ function saveDatabase() {
 
 // 初始化数据库表
 function initTables(database: SqlJsDatabase) {
+  // 系统配置表
+  database.run(`
+    CREATE TABLE IF NOT EXISTS config (
+      key TEXT PRIMARY KEY,
+      value TEXT
+    )
+  `);
+
+  // 客户表 - 增加 logistics, is_collect, remark 字段
   database.run(`
     CREATE TABLE IF NOT EXISTS customers (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       name TEXT NOT NULL,
       phone TEXT,
+      logistics TEXT,
+      is_collect TEXT DEFAULT '否',
+      remark TEXT,
       created_at TEXT DEFAULT CURRENT_TIMESTAMP
     )
   `);
 
+  // 工人工价表 - 增加车工和绣线工价配置
   database.run(`
     CREATE TABLE IF NOT EXISTS workers (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       name TEXT NOT NULL,
       price_per_piece INTEGER DEFAULT 50,
+      sewing_full INTEGER DEFAULT 0,
+      sewing_half INTEGER DEFAULT 0,
+      sewing_quarter INTEGER DEFAULT 0,
+      embroidery_full INTEGER DEFAULT 0,
+      embroidery_half INTEGER DEFAULT 0,
+      embroidery_tail INTEGER DEFAULT 0,
       created_at TEXT DEFAULT CURRENT_TIMESTAMP
     )
   `);
 
+  // 订单表 - 增加 line_mark, set_type, embroidery_type, sewing_fee, embroidery_fee
   database.run(`
     CREATE TABLE IF NOT EXISTS orders (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -59,7 +79,12 @@ function initTables(database: SqlJsDatabase) {
       year_style TEXT,
       product_type TEXT,
       version_no TEXT,
+      line_mark TEXT,
       vin_code TEXT,
+      set_type TEXT DEFAULT '全套',
+      embroidery_type TEXT DEFAULT '无',
+      sewing_fee INTEGER DEFAULT 0,
+      embroidery_fee INTEGER DEFAULT 0,
       lower_material TEXT,
       upper_material TEXT,
       craft TEXT,
@@ -86,6 +111,8 @@ function initTables(database: SqlJsDatabase) {
       quantity INTEGER,
       status TEXT DEFAULT '待生产',
       worker_name TEXT,
+      worker_type TEXT DEFAULT '车工',
+      fee INTEGER DEFAULT 0,
       complete_time TEXT,
       created_at TEXT DEFAULT CURRENT_TIMESTAMP,
       updated_at TEXT DEFAULT CURRENT_TIMESTAMP
@@ -106,11 +133,46 @@ function initTables(database: SqlJsDatabase) {
     )
   `);
 
-  // 检查 vin_code 列是否存在，不存在则添加
-  try {
-    database.run('SELECT vin_code FROM orders LIMIT 1');
-  } catch {
-    database.run('ALTER TABLE orders ADD COLUMN vin_code TEXT');
+  // 添加缺失的列（兼容已有数据库）
+  const addColumnIfNotExists = (table: string, column: string, type: string) => {
+    try {
+      database.run(`SELECT ${column} FROM ${table} LIMIT 1`);
+    } catch {
+      database.run(`ALTER TABLE ${table} ADD COLUMN ${column} ${type}`);
+    }
+  };
+
+  // orders 表新字段
+  addColumnIfNotExists('orders', 'vin_code', 'TEXT');
+  addColumnIfNotExists('orders', 'line_mark', 'TEXT');
+  addColumnIfNotExists('orders', 'set_type', 'TEXT DEFAULT \'全套\'');
+  addColumnIfNotExists('orders', 'embroidery_type', 'TEXT DEFAULT \'无\'');
+  addColumnIfNotExists('orders', 'sewing_fee', 'INTEGER DEFAULT 0');
+  addColumnIfNotExists('orders', 'embroidery_fee', 'INTEGER DEFAULT 0');
+
+  // customers 表新字段
+  addColumnIfNotExists('customers', 'logistics', 'TEXT');
+  addColumnIfNotExists('customers', 'is_collect', 'TEXT DEFAULT \'否\'');
+  addColumnIfNotExists('customers', 'remark', 'TEXT');
+
+  // production 表新字段
+  addColumnIfNotExists('production', 'worker_type', 'TEXT DEFAULT \'车工\'');
+  addColumnIfNotExists('production', 'fee', 'INTEGER DEFAULT 0');
+
+  // workers 表新字段
+  addColumnIfNotExists('workers', 'sewing_full', 'INTEGER DEFAULT 0');
+  addColumnIfNotExists('workers', 'sewing_half', 'INTEGER DEFAULT 0');
+  addColumnIfNotExists('workers', 'sewing_quarter', 'INTEGER DEFAULT 0');
+  addColumnIfNotExists('workers', 'embroidery_full', 'INTEGER DEFAULT 0');
+  addColumnIfNotExists('workers', 'embroidery_half', 'INTEGER DEFAULT 0');
+  addColumnIfNotExists('workers', 'embroidery_tail', 'INTEGER DEFAULT 0');
+
+  // 初始化默认密码
+  const passwordStmt = database.prepare('SELECT value FROM config WHERE key = \'password\'');
+  const passwordResult = passwordStmt.step() ? (passwordStmt as any).getAsObject() : null;
+  passwordStmt.free();
+  if (!passwordResult) {
+    database.run('INSERT INTO config (key, value) VALUES (?, ?)', ['password', 'hc123456']);
   }
 
   // 初始化工人数据
@@ -232,4 +294,43 @@ export function queryOne(stmt: any): any | null {
 // 辅助函数：安全保存数据库
 export function safeSave() {
   saveDatabase();
+}
+
+// 工价计算函数
+export function calculateFees(
+  productType: string,
+  setType: string,
+  embroideryType: string
+): { sewingFee: number; embroideryFee: number } {
+  // 车工工价表：软包全套16/半套8/四分之一套4，脚垫全套6/半套3/四分之一套2
+  const sewingPrices: Record<string, Record<string, number>> = {
+    '软包': { '全套': 16, '半套': 8, '四分之一套': 4 },
+    '脚垫': { '全套': 6, '半套': 3, '四分之一套': 2 }
+  };
+
+  // 绣线工价表：软包全套8/半套4/尾垫4（脚垫无绣线）
+  const embroideryPrices: Record<string, Record<string, number>> = {
+    '软包': { '永恒': 8, '穿梭': 8, '群图': 8, '无': 0 },
+    '脚垫': { '永恒': 0, '穿梭': 0, '群图': 0, '无': 0 }
+  };
+
+  // 软包绣线根据套数调整：全套8/半套4/尾垫4
+  const softEmbroideryBySet: Record<string, number> = {
+    '全套': 8,
+    '半套': 4,
+    '四分之一套': 4 // 尾垫价格
+  };
+
+  const sewingFee = sewingPrices[productType]?.[setType] || 0;
+  
+  let embroideryFee = 0;
+  if (embroideryType !== '无') {
+    if (productType === '软包') {
+      embroideryFee = softEmbroideryBySet[setType] || 0;
+    } else {
+      embroideryFee = 0; // 脚垫无绣线
+    }
+  }
+
+  return { sewingFee, embroideryFee };
 }

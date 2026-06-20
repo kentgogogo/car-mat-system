@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getDb, queryResult, queryOne, safeSave } from '@/lib/db';
+import { getDb, queryResult, queryOne, safeSave, calculateFees } from '@/lib/db';
 
 export async function GET(request: NextRequest) {
   try {
@@ -11,7 +11,7 @@ export async function GET(request: NextRequest) {
     // 获取客户联想列表
     if (action === 'customers' && keyword) {
       const stmt = db.prepare(`
-        SELECT DISTINCT name, phone FROM customers 
+        SELECT DISTINCT name, phone, logistics, is_collect, remark FROM customers 
         WHERE name LIKE ?
         ORDER BY name
         LIMIT 10
@@ -42,7 +42,10 @@ export async function POST(request: NextRequest) {
       year_style,
       product_type,
       version_no,
+      line_mark,
       vin_code,
+      set_type = '全套',
+      embroidery_type = '无',
       lower_material,
       upper_material,
       craft,
@@ -56,6 +59,13 @@ export async function POST(request: NextRequest) {
     } = body;
 
     const total_price = quantity * unit_price;
+
+    // 计算工价
+    const { sewingFee, embroideryFee } = calculateFees(
+      product_type || '脚垫',
+      set_type,
+      embroidery_type
+    );
 
     // 生成订单号：HC-YYYY-MM-DD-三位流水号
     const prefix = `HC-${date.replace(/-/g, '-')}`;
@@ -76,25 +86,36 @@ export async function POST(request: NextRequest) {
     db.run(`
       INSERT INTO orders (
         order_no, date, customer_name, customer_phone, logistics,
-        brand, model, year_style, product_type, version_no, vin_code,
+        brand, model, year_style, product_type, version_no, line_mark, vin_code,
+        set_type, embroidery_type, sewing_fee, embroidery_fee,
         lower_material, upper_material, craft, auxiliary, tail_mat,
         color, quantity, unit_price, total_price, payment_status, remark, status
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, '待裁剪')
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, '待裁剪')
     `, [
       order_no, date, customer_name, customer_phone, logistics,
-      brand, model, year_style, product_type, version_no, vin_code || null,
+      brand, model, year_style, product_type, version_no, line_mark || null, vin_code || null,
+      set_type, embroidery_type, sewingFee, embroideryFee,
       lower_material, upper_material, craft, auxiliary, tail_mat,
       color, quantity, unit_price, total_price, payment_status, remark
     ]);
 
-    // 插入生产记录
+    // 插入生产记录（车工）
     const product_info = `${brand} ${model} ${year_style} ${product_type}`;
     db.run(`
-      INSERT INTO production (production_no, order_no, product_info, quantity, status)
-      VALUES (?, ?, ?, ?, '待生产')
-    `, [production_no, order_no, product_info, quantity]);
+      INSERT INTO production (production_no, order_no, product_info, quantity, status, worker_type, fee)
+      VALUES (?, ?, ?, ?, '待生产', '车工', ?)
+    `, [production_no, order_no, product_info, quantity, sewingFee]);
 
-    // 如果客户名是新客户，自动添加到客户表
+    // 如果有绣线，插入绣线生产记录
+    if (embroideryFee > 0) {
+      const embroidery_production_no = `E-${order_no}`;
+      db.run(`
+        INSERT INTO production (production_no, order_no, product_info, quantity, status, worker_type, fee)
+        VALUES (?, ?, ?, ?, '待生产', '绣线', ?)
+      `, [embroidery_production_no, order_no, `${product_info} 绣线`, quantity, embroideryFee]);
+    }
+
+    // 如果客户名是新客户，自动添加到客户表（包含物流等信息）
     if (customer_name) {
       const customerStmt = db.prepare(`
         SELECT id FROM customers WHERE name = ?
@@ -104,8 +125,16 @@ export async function POST(request: NextRequest) {
       
       if (!existingCustomer) {
         db.run(`
-          INSERT INTO customers (name, phone) VALUES (?, ?)
-        `, [customer_name, customer_phone || null]);
+          INSERT INTO customers (name, phone, logistics, is_collect, remark)
+          VALUES (?, ?, ?, ?, ?)
+        `, [customer_name, customer_phone || null, logistics || null, '否', null]);
+      } else {
+        // 更新客户信息（如果有新信息）
+        if (logistics || customer_phone) {
+          db.run(`
+            UPDATE customers SET phone = ?, logistics = ? WHERE name = ?
+          `, [customer_phone || null, logistics || null, customer_name]);
+        }
       }
     }
 
@@ -114,6 +143,8 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       orderNo: order_no,
+      sewingFee,
+      embroideryFee,
       message: '订单创建成功'
     });
   } catch (error) {

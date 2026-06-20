@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
-import { Users, Package, Calendar, TrendingUp, Save, ClipboardList, Home, Plus, List, Factory, MoreHorizontal } from 'lucide-react';
+import { Users, Package, Calendar, TrendingUp, Save, ClipboardList, Home, Plus, List, Factory, MoreHorizontal, Lock, LogOut } from 'lucide-react';
 import { formatCurrency } from '@/lib/utils';
 import { toast } from 'sonner';
 
@@ -19,17 +19,31 @@ interface WorkerStat {
   total_salary: number;
 }
 
+interface TypeStat {
+  name: string;
+  worker_type: string;
+  piece_count: number;
+  total_fee: number;
+}
+
 interface TotalStats {
   total_pieces: number;
+  total_salary: number;
 }
 
 export default function MorePage() {
   const router = useRouter();
   const [stats, setStats] = useState<WorkerStat[]>([]);
-  const [total, setTotal] = useState<TotalStats>({ total_pieces: 0 });
+  const [typeStats, setTypeStats] = useState<TypeStat[]>([]);
+  const [total, setTotal] = useState<TotalStats>({ total_pieces: 0, total_salary: 0 });
   const [currentMonth, setCurrentMonth] = useState(new Date().toISOString().substring(0, 7));
   const [loading, setLoading] = useState(true);
   const [editingPrices, setEditingPrices] = useState<Record<number, number>>({});
+  
+  // 密码修改相关
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [newPassword, setNewPassword] = useState('');
+  const [savingPassword, setSavingPassword] = useState(false);
 
   useEffect(() => {
     fetchStats();
@@ -41,7 +55,8 @@ export default function MorePage() {
       const res = await fetch(`/api/worker-stats?month=${currentMonth}`);
       const data = await res.json();
       setStats(data.stats || []);
-      setTotal(data.total || { total_pieces: 0 });
+      setTypeStats(data.typeStats || []);
+      setTotal(data.total || { total_pieces: 0, total_salary: 0 });
       
       // 初始化编辑价格
       const prices: Record<number, number> = {};
@@ -62,7 +77,7 @@ export default function MorePage() {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          id: workerId,
+          worker_id: workerId,
           price_per_piece: editingPrices[workerId],
         }),
       });
@@ -75,6 +90,46 @@ export default function MorePage() {
     } catch (error) {
       toast.error('更新失败');
     }
+  };
+
+  const updatePassword = async () => {
+    if (!newPassword || newPassword.length < 6) {
+      toast.error('密码长度至少6位');
+      return;
+    }
+    
+    setSavingPassword(true);
+    try {
+      const res = await fetch('/api/auth', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password: newPassword }),
+      });
+      
+      const data = await res.json();
+      if (data.success) {
+        toast.success('密码已更新');
+        setShowPasswordModal(false);
+        setNewPassword('');
+      } else {
+        toast.error(data.message || '更新失败');
+      }
+    } catch (error) {
+      toast.error('更新失败');
+    } finally {
+      setSavingPassword(false);
+    }
+  };
+
+  const logout = () => {
+    localStorage.removeItem('isLoggedIn');
+    localStorage.removeItem('loginTime');
+    router.push('/login');
+  };
+
+  // 获取每个工人的工种统计
+  const getWorkerTypeStats = (workerName: string) => {
+    return typeStats.filter(ts => ts.name === workerName);
   };
 
   return (
@@ -98,6 +153,14 @@ export default function MorePage() {
             >
               <Users className="w-6 h-6 text-blue-600" />
               <span className="text-sm mt-2">客户管理</span>
+            </Button>
+            <Button
+              variant="outline"
+              className="h-16 flex flex-col items-center"
+              onClick={() => setShowPasswordModal(true)}
+            >
+              <Lock className="w-6 h-6 text-blue-600" />
+              <span className="text-sm mt-2">修改密码</span>
             </Button>
           </CardContent>
         </Card>
@@ -142,9 +205,9 @@ export default function MorePage() {
                     <span className="font-bold text-blue-600">{total.total_pieces} 件</span>
                   </div>
                   <div className="flex justify-between items-center mt-2">
-                    <span className="text-sm text-gray-600">总工资</span>
+                    <span className="text-sm text-gray-600">总工费</span>
                     <span className="font-bold text-blue-600">
-                      {formatCurrency(stats.reduce((sum, s) => sum + s.total_salary, 0))}
+                      {formatCurrency(total.total_salary)}
                     </span>
                   </div>
                 </div>
@@ -163,6 +226,18 @@ export default function MorePage() {
                         {formatCurrency(stat.total_salary)}
                       </div>
                     </div>
+                    
+                    {/* 工种分类统计 */}
+                    {getWorkerTypeStats(stat.name).length > 0 && (
+                      <div className="text-xs text-gray-500 space-y-1 pl-2">
+                        {getWorkerTypeStats(stat.name).map((ts, idx) => (
+                          <div key={idx} className="flex justify-between">
+                            <span>{ts.worker_type}: {ts.piece_count}件</span>
+                            <span className="text-green-600">{formatCurrency(ts.total_fee)}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                     
                     {/* 单价设置 */}
                     <div className="flex items-center gap-2">
@@ -194,7 +269,62 @@ export default function MorePage() {
             )}
           </CardContent>
         </Card>
+
+        {/* 退出登录 */}
+        <Button
+          variant="outline"
+          className="w-full h-12"
+          onClick={logout}
+        >
+          <LogOut className="w-5 h-5 mr-2" />
+          退出登录
+        </Button>
       </div>
+
+      {/* 密码修改模态框 */}
+      {showPasswordModal && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-lg w-full max-w-sm">
+            <div className="flex items-center justify-between px-4 py-3 border-b">
+              <h2 className="font-semibold">修改登录密码</h2>
+              <button 
+                onClick={() => setShowPasswordModal(false)}
+                className="text-gray-500 hover:text-gray-700"
+              >
+                ×
+              </button>
+            </div>
+            <div className="px-4 py-4 space-y-4">
+              <div>
+                <Label className="text-sm">新密码</Label>
+                <Input 
+                  type="password"
+                  value={newPassword}
+                  onChange={e => setNewPassword(e.target.value)}
+                  placeholder="输入新密码（至少6位）"
+                  className="mt-2"
+                />
+              </div>
+              <div className="flex gap-2">
+                <Button 
+                  variant="outline" 
+                  onClick={() => setShowPasswordModal(false)}
+                  className="flex-1"
+                >
+                  取消
+                </Button>
+                <Button 
+                  onClick={updatePassword}
+                  disabled={savingPassword}
+                  className="flex-1"
+                >
+                  {savingPassword ? '保存中...' : '保存'}
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* 底部导航 */}
       <nav className="fixed bottom-0 left-0 right-0 bg-white border-t shadow-lg">
