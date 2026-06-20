@@ -8,6 +8,42 @@ const productTypeMap: Record<string, string> = {
   '后仓': '后仓',
 };
 
+// 解析年款范围，返回开始和结束年份
+function parseYearRange(yearStr: string): { start: number; end: number } | null {
+  // 清理空格
+  const cleaned = yearStr.trim();
+  
+  // 尝试匹配范围格式：'2014-2017' 或 '2011~2016' 或 '2014~2017'
+  const rangeMatch = cleaned.match(/^(\d{4})[-~](\d{4})$/);
+  if (rangeMatch) {
+    return {
+      start: parseInt(rangeMatch[1], 10),
+      end: parseInt(rangeMatch[2], 10),
+    };
+  }
+  
+  // 尝试匹配单个年份：'2022'
+  const singleMatch = cleaned.match(/^(\d{4})$/);
+  if (singleMatch) {
+    const year = parseInt(singleMatch[1], 10);
+    return { start: year, end: year };
+  }
+  
+  // 无法解析，返回null（不参与过滤）
+  return null;
+}
+
+// 判断用户输入的年份是否在数据库年款范围内
+function isYearInRange(userYear: string, dbYearStr: string): boolean {
+  const userYearNum = parseInt(userYear, 10);
+  if (isNaN(userYearNum)) return false;
+  
+  const dbRange = parseYearRange(dbYearStr);
+  if (!dbRange) return false; // 无法解析的年款不参与匹配
+  
+  return userYearNum >= dbRange.start && userYearNum <= dbRange.end;
+}
+
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
@@ -35,26 +71,20 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    // 有筛选条件时，构建查询并返回匹配结果
+    // 有筛选条件时，先查询基础数据（不包含年款过滤）
     let sql = 'SELECT * FROM patterns WHERE 1=1';
     const params: string[] = [];
 
-    // 品牌模糊匹配：输入"问"能匹配到"问界"
+    // 品牌模糊匹配：输入"宝马"能匹配到brand="宝马"，输入"问"能匹配到"问界"
     if (brand) {
       sql += ' AND brand LIKE ?';
       params.push(`%${brand}%`);
     }
 
-    // 车系模糊匹配：输入"问界"能匹配到"问界M6"
+    // 车系模糊匹配：输入"5系"能匹配到series="宝马5系"或"5系"
     if (series) {
       sql += ' AND series LIKE ?';
       params.push(`%${series}%`);
-    }
-
-    // 年款精确匹配
-    if (year) {
-      sql += ' AND year = ?';
-      params.push(year);
     }
 
     // 产品类型精确匹配
@@ -63,7 +93,7 @@ export async function GET(request: NextRequest) {
       params.push(type);
     }
 
-    sql += ' ORDER BY brand, series, year, product_type LIMIT 1000';
+    sql += ' ORDER BY brand, series, year, product_type';
 
     const patterns = db.prepare(sql).all(...params) as Array<{
       id: number;
@@ -77,9 +107,28 @@ export async function GET(request: NextRequest) {
       created_at: string;
     }>;
 
+    // 应用层过滤：年款范围匹配
+    let filteredPatterns = patterns;
+    if (year) {
+      filteredPatterns = patterns.filter(p => isYearInRange(year, p.year));
+    }
+
+    // 去重：相同 version_no 只保留第一条
+    const seenVersionNos = new Set<string>();
+    const deduplicatedPatterns = filteredPatterns.filter(p => {
+      if (seenVersionNos.has(p.version_no)) {
+        return false;
+      }
+      seenVersionNos.add(p.version_no);
+      return true;
+    });
+
+    // 限制返回数量
+    const limitedPatterns = deduplicatedPatterns.slice(0, 1000);
+
     return NextResponse.json({
       success: true,
-      patterns: patterns.map(p => ({
+      patterns: limitedPatterns.map(p => ({
         id: p.id,
         brand: p.brand,
         series: p.series,
@@ -92,7 +141,8 @@ export async function GET(request: NextRequest) {
       brands: brands.map(b => b.brand),
       seriesList: seriesList.map(s => s.series),
       years: years.map(y => y.year),
-      total: patterns.length,
+      total: limitedPatterns.length,
+      filtered_from: patterns.length, // 原始查询数量（用于调试）
     });
   } catch (error) {
     console.error('版型查询失败:', error);
