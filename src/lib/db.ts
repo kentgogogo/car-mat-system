@@ -18,7 +18,7 @@ function ensureDataDir() {
 }
 
 // 保存数据库到文件
-function saveDatabase() {
+export function saveDatabase() {
   if (db) {
     const data = db.export();
     const buffer = Buffer.from(data);
