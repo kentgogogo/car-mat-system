@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { CheckCircle, User, Package } from 'lucide-react';
+import { CheckCircle, User, Package, FileSearch, Home, Plus, List, Factory, MoreHorizontal } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface ProductionDetail {

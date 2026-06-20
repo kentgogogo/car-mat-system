@@ -74,11 +74,27 @@ db.exec(`
     FOREIGN KEY (order_no) REFERENCES orders(order_no)
   );
 
+  -- 版型表
+  CREATE TABLE IF NOT EXISTS patterns (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    brand TEXT NOT NULL,
+    series TEXT NOT NULL,
+    year TEXT NOT NULL,
+    product_type TEXT NOT NULL,
+    version_no TEXT NOT NULL,
+    need_guide INTEGER DEFAULT 0,
+    guide_condition TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+  );
+
   -- 创建索引
   CREATE INDEX IF NOT EXISTS idx_orders_date ON orders(date);
   CREATE INDEX IF NOT EXISTS idx_orders_customer ON orders(customer_name);
   CREATE INDEX IF NOT EXISTS idx_orders_status ON orders(status);
   CREATE INDEX IF NOT EXISTS idx_production_order ON production(order_no);
+  CREATE INDEX IF NOT EXISTS idx_patterns_brand ON patterns(brand);
+  CREATE INDEX IF NOT EXISTS idx_patterns_series ON patterns(series);
+  CREATE INDEX IF NOT EXISTS idx_patterns_year ON patterns(year);
 `);
 
 // 初始化工人数据
@@ -88,6 +104,46 @@ if (workerCount.count === 0) {
   const insertWorker = db.prepare('INSERT INTO workers (name, price_per_piece) VALUES (?, ?)');
   for (const worker of workers) {
     insertWorker.run(worker, 50);
+  }
+}
+
+// 初始化版型数据
+const patternCount = db.prepare('SELECT COUNT(*) as count FROM patterns').get() as { count: number };
+if (patternCount.count === 0) {
+  const patterns = [
+    { brand: '宝马', series: '5系', year: '2022', product_type: '脚垫', version_no: 'BM-5-22-A', need_guide: 0, guide_condition: null },
+    { brand: '宝马', series: '5系', year: '2023', product_type: '脚垫', version_no: 'BM-5-23-A', need_guide: 1, guide_condition: '高配版需确认座椅调节方式' },
+    { brand: '宝马', series: '5系', year: '2024', product_type: '脚垫', version_no: 'BM-5-24-A', need_guide: 0, guide_condition: null },
+    { brand: '宝马', series: 'X5', year: '2022', product_type: '脚垫', version_no: 'BM-X5-22-A', need_guide: 0, guide_condition: null },
+    { brand: '宝马', series: 'X5', year: '2023', product_type: '软包', version_no: 'BM-X5-23-SB', need_guide: 1, guide_condition: '需确认是否有第三排座椅' },
+    { brand: '奔驰', series: 'E300L', year: '2022', product_type: '脚垫', version_no: 'BZ-E300-22-A', need_guide: 0, guide_condition: null },
+    { brand: '奔驰', series: 'E300L', year: '2023', product_type: '脚垫', version_no: 'BZ-E300-23-A', need_guide: 1, guide_condition: '需确认是否带后排娱乐系统' },
+    { brand: '奔驰', series: 'GLC', year: '2023', product_type: '软包', version_no: 'BZ-GLC-23-SB', need_guide: 0, guide_condition: null },
+    { brand: '本田', series: '雅阁', year: '2016', product_type: '脚垫', version_no: 'HD-YG-16-A', need_guide: 0, guide_condition: null },
+    { brand: '本田', series: '雅阁', year: '2018', product_type: '脚垫', version_no: 'HD-YG-18-A', need_guide: 0, guide_condition: null },
+    { brand: '本田', series: '雅阁', year: '2022', product_type: '脚垫', version_no: 'HD-YG-22-A', need_guide: 1, guide_condition: '混动版与燃油版版型不同' },
+    { brand: '本田', series: '雅阁', year: '2025', product_type: '脚垫', version_no: 'HD-YG-25-A', need_guide: 0, guide_condition: null },
+    { brand: '本田', series: 'CR-V', year: '2023', product_type: '脚垫', version_no: 'HD-CRV-23-A', need_guide: 0, guide_condition: null },
+    { brand: '丰田', series: '凯美瑞', year: '2018', product_type: '脚垫', version_no: 'FT-KMR-18-A', need_guide: 0, guide_condition: null },
+    { brand: '丰田', series: '凯美瑞', year: '2022', product_type: '脚垫', version_no: 'FT-KMR-22-A', need_guide: 1, guide_condition: '混动版需确认电池位置' },
+    { brand: '丰田', series: '凯美瑞', year: '2025', product_type: '脚垫', version_no: 'FT-KMR-25-A', need_guide: 0, guide_condition: null },
+    { brand: '丰田', series: '汉兰达', year: '2022', product_type: '脚垫', version_no: 'FT-HLD-22-A', need_guide: 1, guide_condition: '需确认是否为双擎版' },
+    { brand: '丰田', series: '汉兰达', year: '2023', product_type: '软包', version_no: 'FT-HLD-23-SB', need_guide: 0, guide_condition: null },
+    { brand: '五菱', series: '缤果', year: '2023', product_type: '脚垫', version_no: 'WL-BG-23-A', need_guide: 0, guide_condition: null },
+    { brand: '五菱', series: '缤果', year: '2024', product_type: '脚垫', version_no: 'WL-BG-24-A', need_guide: 0, guide_condition: null },
+    { brand: '五菱', series: '星辰', year: '2023', product_type: '脚垫', version_no: 'WL-XC-23-A', need_guide: 0, guide_condition: null },
+    { brand: '赛力斯', series: '问界M5', year: '2023', product_type: '脚垫', version_no: 'SL-M5-23-A', need_guide: 0, guide_condition: null },
+    { brand: '赛力斯', series: '问界M6', year: '2024', product_type: '脚垫', version_no: 'SL-M6-24-A', need_guide: 1, guide_condition: '需确认是否带座椅通风' },
+    { brand: '赛力斯', series: '问界M7', year: '2024', product_type: '软包', version_no: 'SL-M7-24-SB', need_guide: 0, guide_condition: null },
+    { brand: '赛力斯', series: '问界M7', year: '2025', product_type: '后仓', version_no: 'SL-M7-25-HC', need_guide: 1, guide_condition: '需确认后备箱配置' },
+    { brand: '比亚迪', series: '汉', year: '2023', product_type: '脚垫', version_no: 'BD-H-23-A', need_guide: 0, guide_condition: null },
+    { brand: '比亚迪', series: '汉', year: '2024', product_type: '软包', version_no: 'BD-H-24-SB', need_guide: 1, guide_condition: 'EV版与DM版版型不同' },
+    { brand: '比亚迪', series: '唐', year: '2023', product_type: '脚垫', version_no: 'BD-T-23-A', need_guide: 0, guide_condition: null },
+    { brand: '比亚迪', series: '宋PLUS', year: '2024', product_type: '脚垫', version_no: 'BD-SPL-24-A', need_guide: 0, guide_condition: null },
+  ];
+  const insertPattern = db.prepare('INSERT INTO patterns (brand, series, year, product_type, version_no, need_guide, guide_condition) VALUES (?, ?, ?, ?, ?, ?, ?)');
+  for (const pattern of patterns) {
+    insertPattern.run(pattern.brand, pattern.series, pattern.year, pattern.product_type, pattern.version_no, pattern.need_guide, pattern.guide_condition);
   }
 }
 

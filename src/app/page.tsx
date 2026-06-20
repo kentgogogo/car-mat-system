@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import { Package, DollarSign, Calendar, TrendingUp, Plus, List, Factory, Users } from 'lucide-react';
+import { Package, DollarSign, Calendar, TrendingUp, Plus, List, Factory, Users, FileSearch } from 'lucide-react';
 import { formatCurrency } from '@/lib/utils';
 
 interface Stats {
@@ -158,7 +158,7 @@ export default function HomePage() {
           <CardHeader className="pb-2">
             <CardTitle className="text-base">快捷操作</CardTitle>
           </CardHeader>
-          <CardContent className="grid grid-cols-4 gap-2">
+          <CardContent className="grid grid-cols-5 gap-2">
             <Link href="/order/new">
               <Button variant="outline" className="w-full h-12 flex flex-col items-center gap-1">
                 <Plus className="w-5 h-5 text-blue-600" />
@@ -177,6 +177,12 @@ export default function HomePage() {
                 <span className="text-xs">生产</span>
               </Button>
             </Link>
+            <Link href="/pattern-search">
+              <Button variant="outline" className="w-full h-12 flex flex-col items-center gap-1">
+                <FileSearch className="w-5 h-5 text-blue-600" />
+                <span className="text-xs">版型</span>
+              </Button>
+            </Link>
             <Link href="/customer">
               <Button variant="outline" className="w-full h-12 flex flex-col items-center gap-1">
                 <Users className="w-5 h-5 text-blue-600" />
@@ -189,7 +195,7 @@ export default function HomePage() {
 
       {/* 底部导航 */}
       <nav className="fixed bottom-0 left-0 right-0 bg-white border-t shadow-lg">
-        <div className="grid grid-cols-5 h-12">
+        <div className="grid grid-cols-6 h-12">
           <Link href="/" className="flex flex-col items-center justify-center text-blue-600">
             <Package className="w-5 h-5" />
             <span className="text-xs mt-1">首页</span>
@@ -205,6 +211,10 @@ export default function HomePage() {
           <Link href="/production" className="flex flex-col items-center justify-center text-gray-600">
             <Factory className="w-5 h-5" />
             <span className="text-xs mt-1">生产</span>
+          </Link>
+          <Link href="/pattern-search" className="flex flex-col items-center justify-center text-gray-600">
+            <FileSearch className="w-5 h-5" />
+            <span className="text-xs mt-1">版型</span>
           </Link>
           <Link href="/more" className="flex flex-col items-center justify-center text-gray-600">
             <TrendingUp className="w-5 h-5" />

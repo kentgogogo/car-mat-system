@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, Package } from 'lucide-react';
+import { ArrowLeft, Package, FileSearch, Home, Plus, List, Factory, MoreHorizontal } from 'lucide-react';
 import { formatCurrency } from '@/lib/utils';
 
 interface Order {
@@ -181,25 +181,29 @@ export default function CustomerDetailPage() {
 
       {/* 底部导航 */}
       <nav className="fixed bottom-0 left-0 right-0 bg-white border-t shadow-lg">
-        <div className="grid grid-cols-5 h-12">
+        <div className="grid grid-cols-6 h-12">
           <Link href="/" className="flex flex-col items-center justify-center text-gray-600">
-            <Package className="w-5 h-5" />
+            <Home className="w-5 h-5" />
             <span className="text-xs mt-1">首页</span>
           </Link>
           <Link href="/order/new" className="flex flex-col items-center justify-center text-gray-600">
-            <Package className="w-5 h-5" />
+            <Plus className="w-5 h-5" />
             <span className="text-xs mt-1">下单</span>
           </Link>
           <Link href="/order/list" className="flex flex-col items-center justify-center text-gray-600">
-            <Package className="w-5 h-5" />
+            <List className="w-5 h-5" />
             <span className="text-xs mt-1">订单</span>
           </Link>
           <Link href="/production" className="flex flex-col items-center justify-center text-gray-600">
-            <Package className="w-5 h-5" />
+            <Factory className="w-5 h-5" />
             <span className="text-xs mt-1">生产</span>
           </Link>
+          <Link href="/pattern-search" className="flex flex-col items-center justify-center text-gray-600">
+            <FileSearch className="w-5 h-5" />
+            <span className="text-xs mt-1">版型</span>
+          </Link>
           <Link href="/more" className="flex flex-col items-center justify-center text-gray-600">
-            <Package className="w-5 h-5" />
+            <MoreHorizontal className="w-5 h-5" />
             <span className="text-xs mt-1">更多</span>
           </Link>
         </div>
