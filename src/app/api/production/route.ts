@@ -6,6 +6,9 @@ export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
   const id = searchParams.get('id');
   const orderNo = searchParams.get('order_no');
+  const customerName = searchParams.get('customer_name');
+  const status = searchParams.get('status');
+  const getDetail = searchParams.get('detail');
   
   if (id) {
     // 获取单个生产记录
@@ -16,6 +19,22 @@ export async function GET(request: NextRequest) {
       LEFT JOIN orders o ON p.order_no = o.order_no
       WHERE p.id = ?
     `).get(parseInt(id));
+    
+    return NextResponse.json({ production });
+  }
+  
+  if (orderNo && getDetail === 'true') {
+    // 获取完整订单详情
+    const production = db.prepare(`
+      SELECT p.*, 
+             o.customer_name, o.customer_phone, o.date, o.logistics,
+             o.brand, o.model, o.year_style, o.product_type, o.version_no,
+             o.lower_material, o.upper_material, o.craft, o.auxiliary, o.tail_mat,
+             o.color, o.quantity, o.unit_price, o.payment_status, o.remark, o.status as order_status
+      FROM production p
+      LEFT JOIN orders o ON p.order_no = o.order_no
+      WHERE p.order_no = ?
+    `).get(orderNo);
     
     return NextResponse.json({ production });
   }
@@ -33,13 +52,33 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ production });
   }
   
-  // 获取所有生产列表
-  const productions = db.prepare(`
+  // 构建筛选条件
+  let sql = `
     SELECT p.*, o.customer_name
     FROM production p
     LEFT JOIN orders o ON p.order_no = o.order_no
-    ORDER BY p.created_at DESC
-  `).all();
+  `;
+  const conditions: string[] = [];
+  const params: (string | number)[] = [];
+  
+  if (customerName) {
+    conditions.push('o.customer_name LIKE ?');
+    params.push(`%${customerName}%`);
+  }
+  
+  if (status) {
+    conditions.push('p.status = ?');
+    params.push(status);
+  }
+  
+  if (conditions.length > 0) {
+    sql += ' WHERE ' + conditions.join(' AND ');
+  }
+  
+  sql += ' ORDER BY p.created_at DESC';
+  
+  // 获取所有生产列表（支持筛选）
+  const productions = db.prepare(sql).all(...params);
   
   return NextResponse.json({ productions });
 }
