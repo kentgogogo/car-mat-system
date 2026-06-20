@@ -1,82 +1,133 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/lib/db';
+import { getDb, queryResult, queryOne, safeSave } from '@/lib/db';
 
 export async function GET(request: NextRequest) {
   try {
-    const orderNo = request.nextUrl.searchParams.get('order_no');
-    const customerName = request.nextUrl.searchParams.get('customer_name');
-    const status = request.nextUrl.searchParams.get('status');
-    const detail = request.nextUrl.searchParams.get('detail');
+    const db = await getDb();
+    const { searchParams } = new URL(request.url);
+    const order_no = searchParams.get('order_no');
+    const customer_name = searchParams.get('customer_name');
+    const status = searchParams.get('status');
+    const detail = searchParams.get('detail');
 
-    // 如果请求详情
-    if (orderNo && detail === 'true') {
-      const production = db.prepare(`
-        SELECT p.*, o.customer_name, o.customer_phone, o.logistics,
-               o.brand, o.model, o.year_style, o.version_no, o.product_type,
-               o.lower_material, o.upper_material, o.craft, o.auxiliary,
-               o.tail_mat, o.color, o.quantity, o.unit_price, o.total_price,
-               o.payment_status, o.remark, o.date
-        FROM production p
-        LEFT JOIN orders o ON p.order_no = o.order_no
-        WHERE p.order_no = ?
-      `).get(orderNo);
-
-      return NextResponse.json({ production });
+    // 查询特定订单的完整详情
+    if (order_no && detail === 'true') {
+      const orderStmt = db.prepare(`
+        SELECT * FROM orders WHERE order_no = ?
+      `);
+      orderStmt.bind([order_no]);
+      const order = queryOne(orderStmt);
+      
+      if (order) {
+        const productionStmt = db.prepare(`
+          SELECT * FROM production WHERE order_no = ?
+        `);
+        productionStmt.bind([order_no]);
+        const production = queryOne(productionStmt);
+        
+        return NextResponse.json({
+          success: true,
+          order,
+          production
+        });
+      }
+      
+      return NextResponse.json({
+        success: false,
+        error: '订单不存在'
+      }, { status: 404 });
     }
 
-    // 列表查询
-    let sql = `
-      SELECT p.*, o.customer_name 
-      FROM production p
-      LEFT JOIN orders o ON p.order_no = o.order_no
-      WHERE 1=1
-    `;
-    const params: (string | number)[] = [];
+    // 构建查询条件
+    let whereClause = '1=1';
+    const params: string[] = [];
 
-    if (orderNo) {
-      sql += ' AND (p.order_no LIKE ? OR p.production_no LIKE ?)';
-      params.push(`%${orderNo}%`, `%${orderNo}%`);
+    if (order_no) {
+      whereClause += ' AND (p.order_no LIKE ? OR p.production_no LIKE ?)';
+      params.push(`%${order_no}%`, `%${order_no}%`);
     }
-    if (customerName) {
-      sql += ' AND o.customer_name LIKE ?';
-      params.push(`%${customerName}%`);
+    if (customer_name) {
+      whereClause += ' AND o.customer_name LIKE ?';
+      params.push(`%${customer_name}%`);
     }
-    if (status && status !== '全部') {
-      sql += ' AND p.status = ?';
+    if (status) {
+      whereClause += ' AND p.status = ?';
       params.push(status);
     }
 
-    sql += ' ORDER BY p.created_at DESC';
-
-    const productions = db.prepare(sql).all(...params);
+    // 查询生产记录列表
+    const stmt = db.prepare(`
+      SELECT p.*, o.customer_name
+      FROM production p
+      LEFT JOIN orders o ON p.order_no = o.order_no
+      WHERE ${whereClause}
+      ORDER BY p.created_at DESC
+    `);
+    if (params.length > 0) {
+      stmt.bind(params);
+    }
+    const productions = queryResult(stmt);
 
     return NextResponse.json({ productions });
   } catch (error) {
     console.error('获取生产记录失败:', error);
-    return NextResponse.json({ error: '获取生产记录失败' }, { status: 500 });
+    return NextResponse.json({ productions: [] });
   }
 }
 
 export async function PUT(request: NextRequest) {
   try {
+    const db = await getDb();
     const body = await request.json();
-    const { productionId, status, workerName } = body;
+    const { production_no, worker_name, status } = body;
 
-    if (status === '已完成' && workerName) {
-      db.prepare(`
-        UPDATE production 
-        SET status = ?, worker_name = ?, complete_time = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP 
-        WHERE id = ?
-      `).run(status, workerName, productionId);
+    const now = new Date().toISOString().slice(0, 19).replace('T', ' ');
+
+    if (status === '已完成') {
+      db.run(`
+        UPDATE production SET 
+          status = '已完成',
+          worker_name = ?,
+          complete_time = ?,
+          updated_at = CURRENT_TIMESTAMP
+        WHERE production_no = ?
+      `, [worker_name, now, production_no]);
     } else {
-      db.prepare(`
-        UPDATE production SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?
-      `).run(status, productionId);
+      db.run(`
+        UPDATE production SET 
+          status = ?,
+          updated_at = CURRENT_TIMESTAMP
+        WHERE production_no = ?
+      `, [status, production_no]);
     }
 
-    return NextResponse.json({ success: true, message: '状态更新成功' });
+    // 如果生产完成，同时更新订单状态
+    if (status === '已完成') {
+      const orderStmt = db.prepare(`
+        SELECT order_no FROM production WHERE production_no = ?
+      `);
+      orderStmt.bind([production_no]);
+      const production = queryOne(orderStmt);
+      
+      if (production) {
+        db.run(`
+          UPDATE orders SET status = '已完成', updated_at = CURRENT_TIMESTAMP
+          WHERE order_no = ?
+        `, [production.order_no]);
+      }
+    }
+
+    safeSave();
+
+    return NextResponse.json({
+      success: true,
+      message: '生产状态已更新'
+    });
   } catch (error) {
     console.error('更新生产状态失败:', error);
-    return NextResponse.json({ error: '更新生产状态失败' }, { status: 500 });
+    return NextResponse.json({
+      success: false,
+      error: '更新生产状态失败'
+    }, { status: 500 });
   }
 }

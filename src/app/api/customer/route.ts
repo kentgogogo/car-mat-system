@@ -1,80 +1,122 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/lib/db';
+import { getDb, queryResult, queryOne, safeSave } from '@/lib/db';
 
 export async function GET(request: NextRequest) {
   try {
-    const searchParams = request.nextUrl.searchParams;
-    const action = searchParams.get('action');
+    const db = await getDb();
+    const { searchParams } = new URL(request.url);
     const keyword = searchParams.get('keyword');
+    const phone = searchParams.get('phone');
 
-    if (action === 'search') {
-      const customers = db.prepare(`
-        SELECT * FROM customers 
-        WHERE name LIKE ? OR phone LIKE ?
-        ORDER BY created_at DESC
-      `).all(`%${keyword || ''}%`, `%${keyword || ''}%`);
-      return NextResponse.json({ customers });
+    let whereClause = '1=1';
+    const params: string[] = [];
+
+    if (keyword) {
+      whereClause += ' AND name LIKE ?';
+      params.push(`%${keyword}%`);
+    }
+    if (phone) {
+      whereClause += ' AND phone LIKE ?';
+      params.push(`%${phone}%`);
     }
 
-    // 获取客户列表
-    const customers = db.prepare(`
+    const stmt = db.prepare(`
       SELECT c.*, COUNT(o.id) as order_count
       FROM customers c
       LEFT JOIN orders o ON c.name = o.customer_name
+      WHERE ${whereClause}
       GROUP BY c.id
       ORDER BY c.created_at DESC
-    `).all();
+    `);
+    if (params.length > 0) {
+      stmt.bind(params);
+    }
+    const customers = queryResult(stmt);
 
     return NextResponse.json({ customers });
   } catch (error) {
-    console.error('获取客户失败:', error);
-    return NextResponse.json({ error: '获取客户失败' }, { status: 500 });
+    console.error('获取客户列表失败:', error);
+    return NextResponse.json({ customers: [] });
   }
 }
 
 export async function POST(request: NextRequest) {
   try {
+    const db = await getDb();
     const body = await request.json();
     const { name, phone } = body;
 
-    // 检查是否已存在
-    const existing = db.prepare('SELECT * FROM customers WHERE name = ?').get(name);
+    // 检查客户是否已存在
+    const stmt = db.prepare(`
+      SELECT * FROM customers WHERE name = ?
+    `);
+    stmt.bind([name]);
+    const existing = queryOne(stmt);
+
     if (existing) {
-      return NextResponse.json({ 
-        success: true, 
+      // 更新电话
+      if (phone) {
+        db.run(`
+          UPDATE customers SET phone = ? WHERE name = ?
+        `, [phone, name]);
+        safeSave();
+      }
+      return NextResponse.json({
+        success: true,
         customer: existing,
-        message: '客户已存在' 
+        message: '客户已存在'
       });
     }
 
     // 新增客户
-    const result = db.prepare(`
-      INSERT INTO customers (name, phone, created_at)
-      VALUES (?, ?, CURRENT_TIMESTAMP)
-    `).run(name, phone || '');
+    db.run(`
+      INSERT INTO customers (name, phone)
+      VALUES (?, ?)
+    `, [name, phone || null]);
 
-    return NextResponse.json({ 
-      success: true, 
-      customerId: result.lastInsertRowid,
-      message: '客户添加成功' 
+    safeSave();
+
+    const newStmt = db.prepare(`
+      SELECT * FROM customers WHERE name = ?
+    `);
+    newStmt.bind([name]);
+    const customer = queryOne(newStmt);
+
+    return NextResponse.json({
+      success: true,
+      customer,
+      message: '客户添加成功'
     });
   } catch (error) {
     console.error('添加客户失败:', error);
-    return NextResponse.json({ error: '添加客户失败' }, { status: 500 });
+    return NextResponse.json({
+      success: false,
+      error: '添加客户失败'
+    }, { status: 500 });
   }
 }
 
 export async function PUT(request: NextRequest) {
   try {
+    const db = await getDb();
     const body = await request.json();
-    const { id, name, phone } = body;
+    const { id, phone } = body;
 
-    db.prepare('UPDATE customers SET name = ?, phone = ? WHERE id = ?')
-      .run(name, phone, id);
+    db.run(`
+      UPDATE customers SET phone = ? WHERE id = ?
+    `, [phone, id]);
 
-    return NextResponse.json({ success: true, message: '客户更新成功' });
+    safeSave();
+
+    return NextResponse.json({
+      success: true,
+      message: '客户信息已更新'
+    });
   } catch (error) {
     console.error('更新客户失败:', error);
-    return NextResponse.json({ error: '更新客户失败' }, { status: 500 });
+    return NextResponse.json({
+      success: false,
+      error: '更新客户失败'
+    }, { status: 500 });
   }
 }

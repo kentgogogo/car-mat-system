@@ -1,12 +1,17 @@
-import { NextResponse } from 'next/server';
-import { db } from '@/lib/db';
+import { NextRequest, NextResponse } from 'next/server';
+import { getDb, queryResult } from '@/lib/db';
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
-    const workers = db.prepare('SELECT id, name, price_per_piece FROM workers ORDER BY name').all();
+    const db = await getDb();
+    const stmt = db.prepare(`
+      SELECT id, name, price_per_piece FROM workers ORDER BY name
+    `);
+    const workers = queryResult(stmt);
+
     return NextResponse.json({ workers });
   } catch (error) {
     console.error('获取工人列表失败:', error);
-    return NextResponse.json({ error: '获取工人列表失败' }, { status: 500 });
+    return NextResponse.json({ workers: [] });
   }
 }

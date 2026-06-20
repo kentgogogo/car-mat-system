@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/lib/db';
+import { getDb, queryResult, queryOne, safeSave } from '@/lib/db';
 
 export async function PUT(request: NextRequest) {
   try {
+    const db = await getDb();
     const body = await request.json();
     const {
-      orderNo,
+      order_no,
       date,
       customer_name,
       customer_phone,
@@ -15,6 +16,7 @@ export async function PUT(request: NextRequest) {
       year_style,
       product_type,
       version_no,
+      vin_code,
       lower_material,
       upper_material,
       craft,
@@ -28,34 +30,42 @@ export async function PUT(request: NextRequest) {
       status
     } = body;
 
-    const totalPrice = quantity * unit_price;
+    const total_price = quantity * unit_price;
 
-    db.prepare(`
+    db.run(`
       UPDATE orders SET
         date = ?, customer_name = ?, customer_phone = ?, logistics = ?,
-        brand = ?, model = ?, year_style = ?, product_type = ?, version_no = ?,
+        brand = ?, model = ?, year_style = ?, product_type = ?, version_no = ?, vin_code = ?,
         lower_material = ?, upper_material = ?, craft = ?, auxiliary = ?, tail_mat = ?,
-        color = ?, quantity = ?, unit_price = ?, total_price = ?,
-        payment_status = ?, remark = ?, status = ?, updated_at = CURRENT_TIMESTAMP
+        color = ?, quantity = ?, unit_price = ?, total_price = ?, payment_status = ?,
+        remark = ?, status = ?, updated_at = CURRENT_TIMESTAMP
       WHERE order_no = ?
-    `).run(
+    `, [
       date, customer_name, customer_phone, logistics,
-      brand, model, year_style, product_type, version_no,
+      brand, model, year_style, product_type, version_no, vin_code || null,
       lower_material, upper_material, craft, auxiliary, tail_mat,
-      color, quantity, unit_price, totalPrice,
-      payment_status, remark, status, orderNo
-    );
+      color, quantity, unit_price, total_price, payment_status,
+      remark, status, order_no
+    ]);
 
-    // 更新生产表的产品信息
-    const productInfo = `${brand || ''} ${model || ''} ${year_style || ''} ${product_type || ''}`;
-    db.prepare(`
-      UPDATE production SET product_info = ?, quantity = ?, status = ?, updated_at = CURRENT_TIMESTAMP 
+    // 更新生产记录的产品信息
+    const product_info = `${brand} ${model} ${year_style} ${product_type}`;
+    db.run(`
+      UPDATE production SET product_info = ?, quantity = ?
       WHERE order_no = ?
-    `).run(productInfo, quantity, status, orderNo);
+    `, [product_info, quantity, order_no]);
 
-    return NextResponse.json({ success: true, message: '订单更新成功' });
+    safeSave();
+
+    return NextResponse.json({
+      success: true,
+      message: '订单已更新'
+    });
   } catch (error) {
     console.error('更新订单失败:', error);
-    return NextResponse.json({ error: '更新订单失败' }, { status: 500 });
+    return NextResponse.json({
+      success: false,
+      error: '更新订单失败'
+    }, { status: 500 });
   }
 }
