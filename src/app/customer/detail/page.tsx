@@ -1,11 +1,11 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, Package, ClipboardList, Home, Plus, List, Factory, MoreHorizontal } from 'lucide-react';
+import { ArrowLeft, Package, ClipboardList, Home, Plus, List, Factory, MoreHorizontal, Search } from 'lucide-react';
 import { formatCurrency } from '@/lib/utils';
 
 interface Order {
@@ -32,7 +32,7 @@ interface CustomerDetailData {
   totalOrders: { count: number; total: number };
 }
 
-export default function CustomerDetailPage() {
+function CustomerDetailContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const customerId = searchParams.get('id');
@@ -199,7 +199,7 @@ export default function CustomerDetailPage() {
             <span className="text-xs mt-1">生产</span>
           </Link>
           <Link href="/today-query" className="flex flex-col items-center justify-center text-gray-600">
-            <ClipboardList className="w-5 h-5" />
+            <Search className="w-5 h-5" />
             <span className="text-xs mt-1">今日</span>
           </Link>
           <Link href="/more" className="flex flex-col items-center justify-center text-gray-600">
@@ -209,5 +209,17 @@ export default function CustomerDetailPage() {
         </div>
       </nav>
     </div>
+  );
+}
+
+export default function CustomerDetailPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center text-gray-500">加载中...</div>
+      </div>
+    }>
+      <CustomerDetailContent />
+    </Suspense>
   );
 }
