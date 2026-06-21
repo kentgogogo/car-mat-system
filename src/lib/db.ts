@@ -133,6 +133,27 @@ function initTables(database: SqlJsDatabase) {
     )
   `);
 
+  // 发货记录表（独立于订单，支持手动录入）
+  database.run(`
+    CREATE TABLE IF NOT EXISTS shipping_records (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      customer_name TEXT NOT NULL,
+      vehicle TEXT,
+      logistics TEXT,
+      tracking_no TEXT,
+      is_collect TEXT DEFAULT '否',
+      lower_material TEXT,
+      upper_material TEXT,
+      tail_mat TEXT,
+      remark TEXT,
+      source TEXT DEFAULT 'manual',
+      order_id INTEGER,
+      order_no TEXT,
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+      updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+
   // 添加缺失的列（兼容已有数据库）
   const addColumnIfNotExists = (table: string, column: string, type: string) => {
     try {
