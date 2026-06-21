@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { 
   Package, Truck, Plus, Edit2, Trash2, X, Check, RefreshCw,
-  User, Car, Ship, CreditCard, Layers, FileText
+  User, Car, Ship, CreditCard, Layers, FileText, ClipboardList
 } from 'lucide-react';
 import BottomNav from '@/components/BottomNav';
 
@@ -42,6 +42,20 @@ function ShippingContent() {
     vehicle: '',
     logistics: '',
     tracking_no: '',
+    is_collect: '否',
+    lower_material: '',
+    upper_material: '',
+    tail_mat: '',
+    remark: ''
+  });
+  
+  // 添加订单表单状态
+  const [showAddOrderForm, setShowAddOrderForm] = useState(false);
+  const [addingOrder, setAddingOrder] = useState(false);
+  const [newOrder, setNewOrder] = useState({
+    customer_name: '',
+    vehicle: '',
+    logistics: '',
     is_collect: '否',
     lower_material: '',
     upper_material: '',
@@ -116,6 +130,46 @@ function ShippingContent() {
       alert('添加失败');
     } finally {
       setAdding(false);
+    }
+  };
+
+  // 添加订单（直接保存为已发货）
+  const handleAddOrder = async () => {
+    if (!newOrder.customer_name.trim()) {
+      alert('请输入客户名称');
+      return;
+    }
+    
+    setAddingOrder(true);
+    try {
+      const res = await fetch('/api/shipping/order', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newOrder)
+      });
+      
+      const data = await res.json();
+      if (data.success) {
+        setShowAddOrderForm(false);
+        setNewOrder({
+          customer_name: '',
+          vehicle: '',
+          logistics: '',
+          is_collect: '否',
+          lower_material: '',
+          upper_material: '',
+          tail_mat: '',
+          remark: ''
+        });
+        fetchShippingList(false);
+      } else {
+        alert(data.error || '添加失败');
+      }
+    } catch (error) {
+      console.error('添加订单失败:', error);
+      alert('添加失败');
+    } finally {
+      setAddingOrder(false);
     }
   };
 
@@ -204,6 +258,15 @@ function ShippingContent() {
             className="text-white hover:bg-blue-700"
           >
             <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setShowAddOrderForm(true)}
+            className="text-white hover:bg-blue-700"
+          >
+            <ClipboardList className="w-4 h-4 mr-1" />
+            添加订单
           </Button>
           <Button
             variant="ghost"
@@ -332,6 +395,117 @@ function ShippingContent() {
               </Button>
               <Button className="flex-1 bg-blue-600" onClick={handleAdd} disabled={adding}>
                 {adding ? '添加中...' : '保存'}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 添加订单表单 */}
+      {showAddOrderForm && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-end justify-center">
+          <div className="bg-white w-full max-w-lg rounded-t-lg p-4 animate-slide-up">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold">添加订单</h2>
+              <Button variant="ghost" size="sm" onClick={() => setShowAddOrderForm(false)}>
+                <X className="w-5 h-5" />
+              </Button>
+            </div>
+            
+            <div className="space-y-3">
+              <div>
+                <label className="text-sm text-gray-500 mb-1 block">客户名称 *</label>
+                <Input
+                  value={newOrder.customer_name}
+                  onChange={e => setNewOrder(prev => ({ ...prev, customer_name: e.target.value }))}
+                  placeholder="输入客户名称"
+                />
+              </div>
+              
+              <div>
+                <label className="text-sm text-gray-500 mb-1 block">车型</label>
+                <Input
+                  value={newOrder.vehicle}
+                  onChange={e => setNewOrder(prev => ({ ...prev, vehicle: e.target.value }))}
+                  placeholder="如：奥迪A6L 2024款"
+                />
+              </div>
+              
+              <div>
+                <label className="text-sm text-gray-500 mb-1 block">物流</label>
+                <Input
+                  value={newOrder.logistics}
+                  onChange={e => setNewOrder(prev => ({ ...prev, logistics: e.target.value }))}
+                  placeholder="物流公司"
+                />
+              </div>
+              
+              <div>
+                <label className="text-sm text-gray-500 mb-1 block">是否代收</label>
+                <div className="flex gap-2">
+                  <Button
+                    variant={newOrder.is_collect === '是' ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => setNewOrder(prev => ({ ...prev, is_collect: '是' }))}
+                    className={newOrder.is_collect === '是' ? 'bg-blue-600' : ''}
+                  >
+                    是
+                  </Button>
+                  <Button
+                    variant={newOrder.is_collect === '否' ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => setNewOrder(prev => ({ ...prev, is_collect: '否' }))}
+                    className={newOrder.is_collect === '否' ? 'bg-blue-600' : ''}
+                  >
+                    否
+                  </Button>
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-sm text-gray-500 mb-1 block">下层材料</label>
+                  <Input
+                    value={newOrder.lower_material}
+                    onChange={e => setNewOrder(prev => ({ ...prev, lower_material: e.target.value }))}
+                    placeholder="下层材料"
+                  />
+                </div>
+                <div>
+                  <label className="text-sm text-gray-500 mb-1 block">上层材料</label>
+                  <Input
+                    value={newOrder.upper_material}
+                    onChange={e => setNewOrder(prev => ({ ...prev, upper_material: e.target.value }))}
+                    placeholder="上层材料"
+                  />
+                </div>
+              </div>
+              
+              <div>
+                <label className="text-sm text-gray-500 mb-1 block">尾垫</label>
+                <Input
+                  value={newOrder.tail_mat}
+                  onChange={e => setNewOrder(prev => ({ ...prev, tail_mat: e.target.value }))}
+                  placeholder="尾垫信息（如有）"
+                />
+              </div>
+              
+              <div>
+                <label className="text-sm text-gray-500 mb-1 block">备注</label>
+                <Input
+                  value={newOrder.remark}
+                  onChange={e => setNewOrder(prev => ({ ...prev, remark: e.target.value }))}
+                  placeholder="备注信息"
+                />
+              </div>
+            </div>
+            
+            <div className="flex gap-2 mt-4">
+              <Button variant="outline" className="flex-1" onClick={() => setShowAddOrderForm(false)}>
+                取消
+              </Button>
+              <Button className="flex-1 bg-blue-600" onClick={handleAddOrder} disabled={addingOrder}>
+                {addingOrder ? '添加中...' : '保存'}
               </Button>
             </div>
           </div>
