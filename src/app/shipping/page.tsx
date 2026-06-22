@@ -282,61 +282,65 @@ function ShippingContent() {
 
       {/* 新增发货表单 */}
       {showAddForm && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-end justify-center">
-          <div className="bg-white w-full max-w-lg rounded-t-lg p-4 animate-slide-up">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold">新增发货记录</h2>
-              <Button variant="ghost" size="sm" onClick={() => setShowAddForm(false)}>
-                <X className="w-5 h-5" />
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center">
+          <div className="bg-white w-full max-w-sm mx-4 rounded-lg p-3">
+            <div className="flex items-center justify-between mb-2">
+              <h2 className="text-base font-semibold">新增发货</h2>
+              <Button variant="ghost" size="sm" onClick={() => setShowAddForm(false)} className="h-7 w-7 p-0">
+                <X className="w-4 h-4" />
               </Button>
             </div>
             
-            <div className="space-y-3">
+            <div className="space-y-2 text-sm">
               <div>
-                <label className="text-sm text-gray-500 mb-1 block">客户名称 *</label>
+                <label className="text-xs text-gray-500">客户名称 *</label>
                 <Input
                   value={newRecord.customer_name}
                   onChange={e => setNewRecord(prev => ({ ...prev, customer_name: e.target.value }))}
-                  placeholder="输入客户名称"
+                  placeholder="客户名称"
+                  className="h-8 mt-1"
                 />
               </div>
               
               <div>
-                <label className="text-sm text-gray-500 mb-1 block">车型</label>
+                <label className="text-xs text-gray-500">车型</label>
                 <Input
                   value={newRecord.vehicle}
                   onChange={e => setNewRecord(prev => ({ ...prev, vehicle: e.target.value }))}
-                  placeholder="如：奥迪A6L 2024款"
+                  placeholder="车型"
+                  className="h-8 mt-1"
                 />
               </div>
               
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-2 gap-2">
                 <div>
-                  <label className="text-sm text-gray-500 mb-1 block">物流公司</label>
+                  <label className="text-xs text-gray-500">物流公司</label>
                   <Input
                     value={newRecord.logistics}
                     onChange={e => setNewRecord(prev => ({ ...prev, logistics: e.target.value }))}
-                    placeholder="如：顺丰"
+                    placeholder="物流"
+                    className="h-8 mt-1"
                   />
                 </div>
                 <div>
-                  <label className="text-sm text-gray-500 mb-1 block">物流单号</label>
+                  <label className="text-xs text-gray-500">物流单号</label>
                   <Input
                     value={newRecord.tracking_no}
                     onChange={e => setNewRecord(prev => ({ ...prev, tracking_no: e.target.value }))}
-                    placeholder="快递单号"
+                    placeholder="单号"
+                    className="h-8 mt-1"
                   />
                 </div>
               </div>
               
               <div>
-                <label className="text-sm text-gray-500 mb-1 block">是否代收</label>
-                <div className="flex gap-2">
+                <label className="text-xs text-gray-500">是否代收</label>
+                <div className="flex gap-1 mt-1">
                   <Button
                     variant={newRecord.is_collect === '是' ? 'default' : 'outline'}
                     size="sm"
                     onClick={() => setNewRecord(prev => ({ ...prev, is_collect: '是' }))}
-                    className={newRecord.is_collect === '是' ? 'bg-blue-600' : ''}
+                    className={`h-7 px-3 ${newRecord.is_collect === '是' ? 'bg-blue-600' : ''}`}
                   >
                     是
                   </Button>
@@ -344,56 +348,61 @@ function ShippingContent() {
                     variant={newRecord.is_collect === '否' ? 'default' : 'outline'}
                     size="sm"
                     onClick={() => setNewRecord(prev => ({ ...prev, is_collect: '否' }))}
-                    className={newRecord.is_collect === '否' ? 'bg-blue-600' : ''}
+                    className={`h-7 px-3 ${newRecord.is_collect === '否' ? 'bg-blue-600' : ''}`}
                   >
                     否
                   </Button>
                 </div>
               </div>
               
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-2 gap-2">
                 <div>
-                  <label className="text-sm text-gray-500 mb-1 block">下层材料</label>
+                  <label className="text-xs text-gray-500">下层材料</label>
                   <Input
                     value={newRecord.lower_material}
                     onChange={e => setNewRecord(prev => ({ ...prev, lower_material: e.target.value }))}
-                    placeholder="下层材料"
+                    placeholder="下层"
+                    className="h-8 mt-1"
                   />
                 </div>
                 <div>
-                  <label className="text-sm text-gray-500 mb-1 block">上层材料</label>
+                  <label className="text-xs text-gray-500">上层材料</label>
                   <Input
                     value={newRecord.upper_material}
                     onChange={e => setNewRecord(prev => ({ ...prev, upper_material: e.target.value }))}
-                    placeholder="上层材料"
+                    placeholder="上层"
+                    className="h-8 mt-1"
                   />
                 </div>
               </div>
               
-              <div>
-                <label className="text-sm text-gray-500 mb-1 block">尾垫</label>
-                <Input
-                  value={newRecord.tail_mat}
-                  onChange={e => setNewRecord(prev => ({ ...prev, tail_mat: e.target.value }))}
-                  placeholder="尾垫信息（如有）"
-                />
-              </div>
-              
-              <div>
-                <label className="text-sm text-gray-500 mb-1 block">备注</label>
-                <Input
-                  value={newRecord.remark}
-                  onChange={e => setNewRecord(prev => ({ ...prev, remark: e.target.value }))}
-                  placeholder="备注信息"
-                />
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="text-xs text-gray-500">尾垫</label>
+                  <Input
+                    value={newRecord.tail_mat}
+                    onChange={e => setNewRecord(prev => ({ ...prev, tail_mat: e.target.value }))}
+                    placeholder="尾垫"
+                    className="h-8 mt-1"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs text-gray-500">备注</label>
+                  <Input
+                    value={newRecord.remark}
+                    onChange={e => setNewRecord(prev => ({ ...prev, remark: e.target.value }))}
+                    placeholder="备注"
+                    className="h-8 mt-1"
+                  />
+                </div>
               </div>
             </div>
             
-            <div className="flex gap-2 mt-4">
-              <Button variant="outline" className="flex-1" onClick={() => setShowAddForm(false)}>
+            <div className="flex gap-2 mt-3">
+              <Button variant="outline" size="sm" className="flex-1 h-8" onClick={() => setShowAddForm(false)}>
                 取消
               </Button>
-              <Button className="flex-1 bg-blue-600" onClick={handleAdd} disabled={adding}>
+              <Button size="sm" className="flex-1 h-8 bg-blue-600" onClick={handleAdd} disabled={adding}>
                 {adding ? '添加中...' : '保存'}
               </Button>
             </div>
@@ -403,51 +412,54 @@ function ShippingContent() {
 
       {/* 添加订单表单 */}
       {showAddOrderForm && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-end justify-center">
-          <div className="bg-white w-full max-w-lg rounded-t-lg p-4 animate-slide-up">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold">添加订单</h2>
-              <Button variant="ghost" size="sm" onClick={() => setShowAddOrderForm(false)}>
-                <X className="w-5 h-5" />
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center">
+          <div className="bg-white w-full max-w-sm mx-4 rounded-lg p-3">
+            <div className="flex items-center justify-between mb-2">
+              <h2 className="text-base font-semibold">添加订单</h2>
+              <Button variant="ghost" size="sm" onClick={() => setShowAddOrderForm(false)} className="h-7 w-7 p-0">
+                <X className="w-4 h-4" />
               </Button>
             </div>
             
-            <div className="space-y-3">
+            <div className="space-y-2 text-sm">
               <div>
-                <label className="text-sm text-gray-500 mb-1 block">客户名称 *</label>
+                <label className="text-xs text-gray-500">客户名称 *</label>
                 <Input
                   value={newOrder.customer_name}
                   onChange={e => setNewOrder(prev => ({ ...prev, customer_name: e.target.value }))}
-                  placeholder="输入客户名称"
+                  placeholder="客户名称"
+                  className="h-8 mt-1"
                 />
               </div>
               
               <div>
-                <label className="text-sm text-gray-500 mb-1 block">车型</label>
+                <label className="text-xs text-gray-500">车型</label>
                 <Input
                   value={newOrder.vehicle}
                   onChange={e => setNewOrder(prev => ({ ...prev, vehicle: e.target.value }))}
-                  placeholder="如：奥迪A6L 2024款"
+                  placeholder="车型"
+                  className="h-8 mt-1"
                 />
               </div>
               
               <div>
-                <label className="text-sm text-gray-500 mb-1 block">物流</label>
+                <label className="text-xs text-gray-500">物流</label>
                 <Input
                   value={newOrder.logistics}
                   onChange={e => setNewOrder(prev => ({ ...prev, logistics: e.target.value }))}
                   placeholder="物流公司"
+                  className="h-8 mt-1"
                 />
               </div>
               
               <div>
-                <label className="text-sm text-gray-500 mb-1 block">是否代收</label>
-                <div className="flex gap-2">
+                <label className="text-xs text-gray-500">是否代收</label>
+                <div className="flex gap-1 mt-1">
                   <Button
                     variant={newOrder.is_collect === '是' ? 'default' : 'outline'}
                     size="sm"
                     onClick={() => setNewOrder(prev => ({ ...prev, is_collect: '是' }))}
-                    className={newOrder.is_collect === '是' ? 'bg-blue-600' : ''}
+                    className={`h-7 px-3 ${newOrder.is_collect === '是' ? 'bg-blue-600' : ''}`}
                   >
                     是
                   </Button>
@@ -455,56 +467,61 @@ function ShippingContent() {
                     variant={newOrder.is_collect === '否' ? 'default' : 'outline'}
                     size="sm"
                     onClick={() => setNewOrder(prev => ({ ...prev, is_collect: '否' }))}
-                    className={newOrder.is_collect === '否' ? 'bg-blue-600' : ''}
+                    className={`h-7 px-3 ${newOrder.is_collect === '否' ? 'bg-blue-600' : ''}`}
                   >
                     否
                   </Button>
                 </div>
               </div>
               
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-2 gap-2">
                 <div>
-                  <label className="text-sm text-gray-500 mb-1 block">下层材料</label>
+                  <label className="text-xs text-gray-500">下层材料</label>
                   <Input
                     value={newOrder.lower_material}
                     onChange={e => setNewOrder(prev => ({ ...prev, lower_material: e.target.value }))}
-                    placeholder="下层材料"
+                    placeholder="下层"
+                    className="h-8 mt-1"
                   />
                 </div>
                 <div>
-                  <label className="text-sm text-gray-500 mb-1 block">上层材料</label>
+                  <label className="text-xs text-gray-500">上层材料</label>
                   <Input
                     value={newOrder.upper_material}
                     onChange={e => setNewOrder(prev => ({ ...prev, upper_material: e.target.value }))}
-                    placeholder="上层材料"
+                    placeholder="上层"
+                    className="h-8 mt-1"
                   />
                 </div>
               </div>
               
-              <div>
-                <label className="text-sm text-gray-500 mb-1 block">尾垫</label>
-                <Input
-                  value={newOrder.tail_mat}
-                  onChange={e => setNewOrder(prev => ({ ...prev, tail_mat: e.target.value }))}
-                  placeholder="尾垫信息（如有）"
-                />
-              </div>
-              
-              <div>
-                <label className="text-sm text-gray-500 mb-1 block">备注</label>
-                <Input
-                  value={newOrder.remark}
-                  onChange={e => setNewOrder(prev => ({ ...prev, remark: e.target.value }))}
-                  placeholder="备注信息"
-                />
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="text-xs text-gray-500">尾垫</label>
+                  <Input
+                    value={newOrder.tail_mat}
+                    onChange={e => setNewOrder(prev => ({ ...prev, tail_mat: e.target.value }))}
+                    placeholder="尾垫"
+                    className="h-8 mt-1"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs text-gray-500">备注</label>
+                  <Input
+                    value={newOrder.remark}
+                    onChange={e => setNewOrder(prev => ({ ...prev, remark: e.target.value }))}
+                    placeholder="备注"
+                    className="h-8 mt-1"
+                  />
+                </div>
               </div>
             </div>
             
-            <div className="flex gap-2 mt-4">
-              <Button variant="outline" className="flex-1" onClick={() => setShowAddOrderForm(false)}>
+            <div className="flex gap-2 mt-3">
+              <Button variant="outline" size="sm" className="flex-1 h-8" onClick={() => setShowAddOrderForm(false)}>
                 取消
               </Button>
-              <Button className="flex-1 bg-blue-600" onClick={handleAddOrder} disabled={addingOrder}>
+              <Button size="sm" className="flex-1 h-8 bg-blue-600" onClick={handleAddOrder} disabled={addingOrder}>
                 {addingOrder ? '添加中...' : '保存'}
               </Button>
             </div>
@@ -514,62 +531,66 @@ function ShippingContent() {
 
       {/* 编辑发货表单 */}
       {editingId && editRecord && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-end justify-center">
-          <div className="bg-white w-full max-w-lg rounded-t-lg p-4 animate-slide-up">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold">编辑发货信息</h2>
-              <Button variant="ghost" size="sm" onClick={cancelEdit}>
-                <X className="w-5 h-5" />
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center">
+          <div className="bg-white w-full max-w-sm mx-4 rounded-lg p-3">
+            <div className="flex items-center justify-between mb-2">
+              <h2 className="text-base font-semibold">编辑发货</h2>
+              <Button variant="ghost" size="sm" onClick={cancelEdit} className="h-7 w-7 p-0">
+                <X className="w-4 h-4" />
               </Button>
             </div>
             
-            <div className="space-y-3">
+            <div className="space-y-2 text-sm">
               <div>
-                <label className="text-sm text-gray-500 mb-1 block">客户名称</label>
+                <label className="text-xs text-gray-500">客户名称</label>
                 <Input
                   value={editRecord.customer_name}
                   onChange={e => setEditRecord(prev => prev ? { ...prev, customer_name: e.target.value } : null)}
                   disabled={editRecord.source === 'order'}
+                  className="h-8 mt-1"
                 />
               </div>
               
               <div>
-                <label className="text-sm text-gray-500 mb-1 block">车型</label>
+                <label className="text-xs text-gray-500">车型</label>
                 <Input
                   value={editRecord.vehicle}
                   onChange={e => setEditRecord(prev => prev ? { ...prev, vehicle: e.target.value } : null)}
                   disabled={editRecord.source === 'order'}
+                  className="h-8 mt-1"
                 />
               </div>
               
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-2 gap-2">
                 <div>
-                  <label className="text-sm text-gray-500 mb-1 block">物流公司</label>
+                  <label className="text-xs text-gray-500">物流公司</label>
                   <Input
                     value={editRecord.logistics}
                     onChange={e => setEditRecord(prev => prev ? { ...prev, logistics: e.target.value } : null)}
-                    placeholder="物流公司"
+                    placeholder="物流"
+                    className="h-8 mt-1"
                   />
                 </div>
                 <div>
-                  <label className="text-sm text-gray-500 mb-1 block">物流单号</label>
+                  <label className="text-xs text-gray-500">物流单号</label>
                   <Input
                     value={editRecord.tracking_no}
                     onChange={e => setEditRecord(prev => prev ? { ...prev, tracking_no: e.target.value } : null)}
-                    placeholder="快递单号"
+                    placeholder="单号"
+                    className="h-8 mt-1"
                   />
                 </div>
               </div>
               
               <div>
-                <label className="text-sm text-gray-500 mb-1 block">是否代收</label>
-                <div className="flex gap-2">
+                <label className="text-xs text-gray-500">是否代收</label>
+                <div className="flex gap-1 mt-1">
                   <Button
                     variant={editRecord.is_collect === '是' ? 'default' : 'outline'}
                     size="sm"
                     onClick={() => setEditRecord(prev => prev ? { ...prev, is_collect: '是' } : null)}
                     disabled={editRecord.source === 'order'}
-                    className={editRecord.is_collect === '是' ? 'bg-blue-600' : ''}
+                    className={`h-7 px-3 ${editRecord.is_collect === '是' ? 'bg-blue-600' : ''}`}
                   >
                     是
                   </Button>
@@ -578,56 +599,61 @@ function ShippingContent() {
                     size="sm"
                     onClick={() => setEditRecord(prev => prev ? { ...prev, is_collect: '否' } : null)}
                     disabled={editRecord.source === 'order'}
-                    className={editRecord.is_collect === '否' ? 'bg-blue-600' : ''}
+                    className={`h-7 px-3 ${editRecord.is_collect === '否' ? 'bg-blue-600' : ''}`}
                   >
                     否
                   </Button>
                 </div>
               </div>
               
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-2 gap-2">
                 <div>
-                  <label className="text-sm text-gray-500 mb-1 block">下层材料</label>
+                  <label className="text-xs text-gray-500">下层材料</label>
                   <Input
                     value={editRecord.lower_material}
                     onChange={e => setEditRecord(prev => prev ? { ...prev, lower_material: e.target.value } : null)}
                     disabled={editRecord.source === 'order'}
+                    className="h-8 mt-1"
                   />
                 </div>
                 <div>
-                  <label className="text-sm text-gray-500 mb-1 block">上层材料</label>
+                  <label className="text-xs text-gray-500">上层材料</label>
                   <Input
                     value={editRecord.upper_material}
                     onChange={e => setEditRecord(prev => prev ? { ...prev, upper_material: e.target.value } : null)}
                     disabled={editRecord.source === 'order'}
+                    className="h-8 mt-1"
                   />
                 </div>
               </div>
               
-              <div>
-                <label className="text-sm text-gray-500 mb-1 block">尾垫</label>
-                <Input
-                  value={editRecord.tail_mat}
-                  onChange={e => setEditRecord(prev => prev ? { ...prev, tail_mat: e.target.value } : null)}
-                  disabled={editRecord.source === 'order'}
-                />
-              </div>
-              
-              <div>
-                <label className="text-sm text-gray-500 mb-1 block">备注</label>
-                <Input
-                  value={editRecord.remark}
-                  onChange={e => setEditRecord(prev => prev ? { ...prev, remark: e.target.value } : null)}
-                  placeholder="备注信息"
-                />
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="text-xs text-gray-500">尾垫</label>
+                  <Input
+                    value={editRecord.tail_mat}
+                    onChange={e => setEditRecord(prev => prev ? { ...prev, tail_mat: e.target.value } : null)}
+                    disabled={editRecord.source === 'order'}
+                    className="h-8 mt-1"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs text-gray-500">备注</label>
+                  <Input
+                    value={editRecord.remark}
+                    onChange={e => setEditRecord(prev => prev ? { ...prev, remark: e.target.value } : null)}
+                    placeholder="备注"
+                    className="h-8 mt-1"
+                  />
+                </div>
               </div>
             </div>
             
-            <div className="flex gap-2 mt-4">
-              <Button variant="outline" className="flex-1" onClick={cancelEdit}>
+            <div className="flex gap-2 mt-3">
+              <Button variant="outline" size="sm" className="flex-1 h-8" onClick={cancelEdit}>
                 取消
               </Button>
-              <Button className="flex-1 bg-blue-600" onClick={saveEdit} disabled={saving}>
+              <Button size="sm" className="flex-1 h-8 bg-blue-600" onClick={saveEdit} disabled={saving}>
                 {saving ? '保存中...' : '保存'}
               </Button>
             </div>
