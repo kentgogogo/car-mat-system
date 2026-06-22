@@ -15,7 +15,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Factory, QrCode, Package, Search, Eye, X } from 'lucide-react';
+import { Factory, QrCode, Package, Search, Eye, X, Edit, Trash2 } from 'lucide-react';
 import BottomNav from '@/components/BottomNav';
 import { toast } from 'sonner';
 
@@ -27,10 +27,13 @@ interface Production {
   quantity: number;
   status: string;
   worker_name: string;
+  worker_type: string;
+  fee: number;
   complete_time: string;
   customer_name: string;
   version_no: string;
   tail_version_no: string;
+  remark: string;
 }
 
 interface OrderDetail {
@@ -71,6 +74,20 @@ export default function ProductionPage() {
   const [currentQrCode, setCurrentQrCode] = useState<string>('');
   const [currentUrl, setCurrentUrl] = useState<string>('');
   const [currentDetail, setCurrentDetail] = useState<OrderDetail | null>(null);
+  
+  // 编辑和删除状态
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [editingProduction, setEditingProduction] = useState<Production | null>(null);
+  const [deletingProduction, setDeletingProduction] = useState<Production | null>(null);
+  const [editForm, setEditForm] = useState({
+    status: '',
+    worker_name: '',
+    fee: 0,
+    worker_type: '',
+    quantity: 1,
+    remark: '',
+  });
   
   // 筛选条件
   const [searchOrderNo, setSearchOrderNo] = useState('');
@@ -132,6 +149,86 @@ export default function ProductionPage() {
     setSearchCustomer('');
     setFilterStatus('');
     fetchProductions();
+  };
+
+  // 打开编辑弹窗（备用）
+  const handleEdit = (production: Production) => {
+    setEditingProduction(production);
+    setEditForm({
+      status: production.status || '',
+      worker_name: production.worker_name || '',
+      fee: production.fee || 0,
+      worker_type: production.worker_type || '',
+      quantity: production.quantity || 1,
+      remark: production.remark || '',
+    });
+    setEditDialogOpen(true);
+  };
+
+  // 保存编辑
+  const handleSaveEdit = async () => {
+    if (!editingProduction) return;
+    
+    try {
+      const res = await fetch(`/api/production/${editingProduction.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(editForm),
+      });
+      
+      const data = await res.json();
+      if (data.success) {
+        toast.success('生产记录已更新');
+        setEditDialogOpen(false);
+        fetchProductions();
+      } else {
+        toast.error(data.error || '更新失败');
+      }
+    } catch (error) {
+      toast.error('更新失败');
+    }
+  };
+
+  // 打开编辑弹窗
+  const handleEditClick = (production: Production) => {
+    setEditingProduction(production);
+    setEditForm({
+      status: production.status || '待裁剪',
+      worker_name: production.worker_name || '',
+      fee: production.fee || 0,
+      worker_type: production.worker_type || '车工',
+      quantity: production.quantity || 1,
+      remark: production.remark || '',
+    });
+    setEditDialogOpen(true);
+  };
+
+  // 打开删除确认弹窗
+  const handleDeleteClick = (production: Production) => {
+    setDeletingProduction(production);
+    setDeleteDialogOpen(true);
+  };
+
+  // 确认删除
+  const handleConfirmDelete = async () => {
+    if (!deletingProduction) return;
+    
+    try {
+      const res = await fetch(`/api/production/${deletingProduction.id}`, {
+        method: 'DELETE',
+      });
+      
+      const data = await res.json();
+      if (data.success) {
+        toast.success('生产记录已删除');
+        setDeleteDialogOpen(false);
+        fetchProductions();
+      } else {
+        toast.error(data.error || '删除失败');
+      }
+    } catch (error) {
+      toast.error('删除失败');
+    }
   };
 
   const generateQrCode = async (productionId: number) => {
@@ -319,7 +416,16 @@ export default function ProductionPage() {
                     className="flex-1"
                   >
                     <Eye className="w-4 h-4 mr-1" />
-                    查看详情
+                    详情
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleEditClick(production)}
+                    className="flex-1"
+                  >
+                    <Edit className="w-4 h-4 mr-1" />
+                    编辑
                   </Button>
                   <Button
                     variant="outline"
@@ -329,6 +435,15 @@ export default function ProductionPage() {
                   >
                     <QrCode className="w-4 h-4 mr-1" />
                     二维码
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleDeleteClick(production)}
+                    className="text-red-600 hover:text-red-700"
+                  >
+                    <Trash2 className="w-4 h-4 mr-1" />
+                    删除
                   </Button>
                 </div>
               </CardContent>
@@ -512,6 +627,88 @@ export default function ProductionPage() {
               )}
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* 编辑生产记录弹窗 */}
+      <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>编辑生产记录</DialogTitle>
+          </DialogHeader>
+          {editingProduction && (
+            <div className="space-y-3">
+              <div>
+                <label className="text-sm text-gray-500">生产编号</label>
+                <div className="text-sm font-medium">{editingProduction.production_no}</div>
+              </div>
+              <div>
+                <label className="text-sm text-gray-500">状态</label>
+                <select
+                  className="w-full border rounded px-2 py-1 text-sm"
+                  value={editForm.status}
+                  onChange={(e) => setEditForm({...editForm, status: e.target.value})}
+                >
+                  <option value="待裁剪">待裁剪</option>
+                  <option value="待生产">待生产</option>
+                  <option value="生产中">生产中</option>
+                  <option value="已完成">已完成</option>
+                </select>
+              </div>
+              <div>
+                <label className="text-sm text-gray-500">车工姓名</label>
+                <input
+                  type="text"
+                  className="w-full border rounded px-2 py-1 text-sm"
+                  value={editForm.worker_name}
+                  onChange={(e) => setEditForm({...editForm, worker_name: e.target.value})}
+                  placeholder="输入车工姓名"
+                />
+              </div>
+              <div>
+                <label className="text-sm text-gray-500">费用(元)</label>
+                <input
+                  type="number"
+                  className="w-full border rounded px-2 py-1 text-sm"
+                  value={editForm.fee}
+                  onChange={(e) => setEditForm({...editForm, fee: Number(e.target.value)})}
+                  placeholder="输入费用"
+                />
+              </div>
+              <div className="flex gap-2 pt-2">
+                <Button variant="outline" className="flex-1" onClick={() => setEditDialogOpen(false)}>
+                  取消
+                </Button>
+                <Button className="flex-1 bg-blue-500" onClick={handleSaveEdit}>
+                  保存
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* 删除确认弹窗 */}
+      <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>确认删除</DialogTitle>
+          </DialogHeader>
+          <div className="py-4">
+            <p className="text-sm text-gray-600">确定要删除这条生产记录吗？</p>
+            {deletingProduction && (
+              <p className="text-sm font-medium mt-2">{deletingProduction.production_no}</p>
+            )}
+            <p className="text-xs text-red-500 mt-2">删除后无法恢复</p>
+          </div>
+          <div className="flex gap-2">
+            <Button variant="outline" className="flex-1" onClick={() => setDeleteDialogOpen(false)}>
+              取消
+            </Button>
+            <Button variant="destructive" className="flex-1" onClick={handleConfirmDelete}>
+              删除
+            </Button>
+          </div>
         </DialogContent>
       </Dialog>
 
