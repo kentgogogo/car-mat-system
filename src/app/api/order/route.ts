@@ -106,34 +106,36 @@ export async function POST(request: NextRequest) {
     const orderIdResult = queryOne(orderIdStmt);
     const order_id = orderIdResult?.id || null;
 
-    // 插入生产记录（车工）- 包含完整信息，关联订单ID
-    const product_info = `${brand} ${model} ${year_style} ${product_type}`;
-    db.run(`
-      INSERT INTO production (
-        production_no, order_no, order_id, product_info, model,
-        lower_material, upper_material, craft, auxiliary,
-        quantity, status, worker_type, fee
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, '待裁剪', '车工', ?)
-    `, [
-      production_no, order_no, order_id, product_info, model,
-      lower_material, upper_material, craft, auxiliary,
-      quantity, sewingFee
-    ]);
-
-    // 如果有绣线，插入绣线生产记录
-    if (embroideryFee > 0) {
-      const embroidery_production_no = `E-${order_no}`;
+    // 只有版型号不为空时，才同步生成生产记录
+    if (version_no && version_no.trim() !== '') {
+      const product_info = `${brand} ${model} ${year_style} ${product_type}`;
       db.run(`
         INSERT INTO production (
           production_no, order_no, order_id, product_info, model,
           lower_material, upper_material, craft, auxiliary,
           quantity, status, worker_type, fee
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, '待裁剪', '绣线', ?)
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, '待裁剪', '车工', ?)
       `, [
-        embroidery_production_no, order_no, order_id, `${product_info} 绣线`, model,
+        production_no, order_no, order_id, product_info, model,
         lower_material, upper_material, craft, auxiliary,
-        quantity, embroideryFee
+        quantity, sewingFee
       ]);
+
+      // 如果有绣线，插入绣线生产记录
+      if (embroideryFee > 0) {
+        const embroidery_production_no = `E-${order_no}`;
+        db.run(`
+          INSERT INTO production (
+            production_no, order_no, order_id, product_info, model,
+            lower_material, upper_material, craft, auxiliary,
+            quantity, status, worker_type, fee
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, '待裁剪', '绣线', ?)
+        `, [
+          embroidery_production_no, order_no, order_id, `${product_info} 绣线`, model,
+          lower_material, upper_material, craft, auxiliary,
+          quantity, embroideryFee
+        ]);
+      }
     }
 
     // 如果客户名是新客户，自动添加到客户表（包含物流等信息）
