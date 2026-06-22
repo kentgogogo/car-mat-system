@@ -413,8 +413,12 @@ export default function ProductionPage() {
                     <span className="ml-1">{currentDetail.year_style || '-'}</span>
                   </div>
                   <div>
-                    <span className="text-gray-500">版型号:</span>
-                    <span className="ml-1">{currentDetail.version_no || '-'}</span>
+                    <span className="text-gray-500">软包/脚垫版型号:</span>
+                    <span className="ml-1 font-medium text-blue-600">{currentDetail.version_no || '-'}</span>
+                  </div>
+                  <div>
+                    <span className="text-gray-500">尾垫版型号:</span>
+                    <span className="ml-1 font-medium text-blue-600">{currentDetail.tail_version_no || '-'}</span>
                   </div>
                 </div>
               </div>
@@ -450,10 +454,6 @@ export default function ProductionPage() {
                   <div>
                     <span className="text-gray-500">尾垫:</span>
                     <span className="ml-1">{currentDetail.tail_mat || '-'}</span>
-                  </div>
-                  <div>
-                    <span className="text-gray-500">后舱版型号:</span>
-                    <span className="ml-1">{currentDetail.tail_version_no || '-'}</span>
                   </div>
                   <div>
                     <span className="text-gray-500">数量:</span>
