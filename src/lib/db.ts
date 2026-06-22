@@ -181,6 +181,12 @@ function initTables(database: SqlJsDatabase) {
   // production 表新字段
   addColumnIfNotExists('production', 'worker_type', 'TEXT DEFAULT \'车工\'');
   addColumnIfNotExists('production', 'fee', 'INTEGER DEFAULT 0');
+  addColumnIfNotExists('production', 'order_id', 'INTEGER');
+  addColumnIfNotExists('production', 'model', 'TEXT');
+  addColumnIfNotExists('production', 'lower_material', 'TEXT');
+  addColumnIfNotExists('production', 'upper_material', 'TEXT');
+  addColumnIfNotExists('production', 'craft', 'TEXT');
+  addColumnIfNotExists('production', 'auxiliary', 'TEXT');
 
   // workers 表新字段
   addColumnIfNotExists('workers', 'sewing_full', 'INTEGER DEFAULT 0');
