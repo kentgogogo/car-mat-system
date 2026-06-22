@@ -32,7 +32,7 @@ const auxiliaryOptions = ['普通扣', '魔术扣'];
 const tailMatOptions = ['有', '无'];
 const paymentOptions = ['代收', '已付', '未付'];
 const setTypeOptions = ['全套', '半套', '四分之一套'];
-const embroideryTypeOptions = ['无', '永恒', '穿梭', '群图'];
+const embroideryTypeOptions = ['无', '永恒', '穿梭', '群图', '赛道'];
 
 // 工价计算
 const calculateFees = (productType: string, setType: string, embroideryType: string) => {

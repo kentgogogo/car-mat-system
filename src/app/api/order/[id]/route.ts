@@ -42,11 +42,11 @@ export async function PUT(request: NextRequest) {
         remark = ?, status = ?, updated_at = CURRENT_TIMESTAMP
       WHERE order_no = ?
     `, [
-      date, customer_name, customer_phone, logistics,
-      brand, model, year_style, product_type, version_no, vin_code || null,
-      lower_material, upper_material, craft, auxiliary, tail_mat, tail_version_no || null,
-      color, quantity, unit_price, total_price, payment_status,
-      remark, status, order_no
+      date || null, customer_name || null, customer_phone || null, logistics || null,
+      brand || null, model || null, year_style || null, product_type || null, version_no || null, vin_code || null,
+      lower_material || null, upper_material || null, craft || null, auxiliary || null, tail_mat || null, tail_version_no || null,
+      color || null, quantity, unit_price, total_price, payment_status || null,
+      remark || null, status || null, order_no
     ]);
 
     // 更新生产记录的产品信息
