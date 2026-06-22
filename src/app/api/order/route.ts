@@ -83,7 +83,7 @@ export async function POST(request: NextRequest) {
     // 生成生产编号
     const production_no = `P-${order_no}`;
 
-    // 插入订单
+    // 插入订单 - 所有可能为空的值都转换为 null
     db.run(`
       INSERT INTO orders (
         order_no, date, customer_name, customer_phone, logistics,
@@ -93,11 +93,11 @@ export async function POST(request: NextRequest) {
         color, quantity, unit_price, total_price, payment_status, remark, status
       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, '待裁剪')
     `, [
-      order_no, date, customer_name, customer_phone, logistics,
-      brand, model, year_style, product_type, version_no, line_mark || null, vin_code || null,
+      order_no, date, customer_name || null, customer_phone || null, logistics || null,
+      brand || null, model || null, year_style || null, product_type || null, version_no || null, line_mark || null, vin_code || null,
       set_type, embroidery_type, sewingFee, embroideryFee,
-      lower_material, upper_material, craft, auxiliary, tail_mat, tail_version_no || null,
-      color, quantity, unit_price, total_price, payment_status, remark
+      lower_material || null, upper_material || null, craft || null, auxiliary || null, tail_mat || null, tail_version_no || null,
+      color || null, quantity, unit_price || 0, total_price, payment_status, remark || null
     ]);
 
     // 获取刚创建的订单ID
@@ -108,7 +108,7 @@ export async function POST(request: NextRequest) {
 
     // 只有版型号不为空时，才同步生成生产记录
     if (version_no && version_no.trim() !== '') {
-      const product_info = `${brand} ${model} ${year_style} ${product_type}`;
+      const product_info = `${brand || ''} ${model || ''} ${year_style || ''} ${product_type || ''}`;
       db.run(`
         INSERT INTO production (
           production_no, order_no, order_id, product_info, model,
@@ -116,8 +116,8 @@ export async function POST(request: NextRequest) {
           quantity, status, worker_type, fee
         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, '待裁剪', '车工', ?)
       `, [
-        production_no, order_no, order_id, product_info, model,
-        lower_material, upper_material, craft, auxiliary,
+        production_no, order_no, order_id, product_info, model || null,
+        lower_material || null, upper_material || null, craft || null, auxiliary || null,
         quantity, sewingFee
       ]);
 
@@ -131,8 +131,8 @@ export async function POST(request: NextRequest) {
             quantity, status, worker_type, fee
           ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, '待裁剪', '绣线', ?)
         `, [
-          embroidery_production_no, order_no, order_id, `${product_info} 绣线`, model,
-          lower_material, upper_material, craft, auxiliary,
+          embroidery_production_no, order_no, order_id, `${product_info} 绣线`, model || null,
+          lower_material || null, upper_material || null, craft || null, auxiliary || null,
           quantity, embroideryFee
         ]);
       }
