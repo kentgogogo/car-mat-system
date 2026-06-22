@@ -1,6 +1,27 @@
 import { NextResponse } from 'next/server';
 import { getDb, queryResult, saveDatabase } from '@/lib/db';
 
+// 生成订单号
+function generateOrderNo(db: any): string {
+  const today = new Date();
+  const dateStr = today.toISOString().split('T')[0]; // YYYY-MM-DD
+  
+  // 查询今天已有的订单数量
+  const stmt = db.prepare(`
+    SELECT COUNT(*) as count FROM orders 
+    WHERE date LIKE ? OR order_no LIKE ?
+  `);
+  stmt.bind([`${dateStr}%`, `HC-${dateStr}%`]);
+  stmt.step();
+  const row = (stmt as any).getAsObject();
+  stmt.free();
+  
+  const count = row?.count || 0;
+  const seq = (count + 1).toString().padStart(3, '0');
+  
+  return `HC-${dateStr}-${seq}`;
+}
+
 export async function GET() {
   try {
     const db = await getDb();
@@ -105,7 +126,7 @@ export async function GET() {
   }
 }
 
-// 新增手动发货记录
+// 新增发货记录（可同时创建订单）
 export async function POST(request: Request) {
   try {
     const db = await getDb();
@@ -120,21 +141,71 @@ export async function POST(request: Request) {
       lower_material, 
       upper_material, 
       tail_mat, 
-      remark 
+      remark,
+      create_order  // 是否同时创建订单
     } = body;
     
     if (!customer_name) {
       return NextResponse.json({ success: false, error: '客户名称必填' }, { status: 400 });
     }
     
+    let orderNo = '';
+    let orderId = null;
+    
+    // 如果需要同时创建订单
+    if (create_order) {
+      orderNo = generateOrderNo(db);
+      const now = new Date().toISOString().replace('T', ' ').substring(0, 19);
+      
+      // 解析车型
+      const vehicleParts = (vehicle || '').split(' ');
+      const brand = vehicleParts[0] || '';
+      const model = vehicleParts[1] || '';
+      const yearStyle = vehicleParts[2] || '';
+      
+      // 确定付款状态
+      const paymentStatus = is_collect === '是' ? '代收' : '未付';
+      
+      // 创建订单（状态为已发货）
+      db.run(`
+        INSERT INTO orders (
+          order_no, date, customer_name, customer_phone,
+          brand, model, year_style,
+          product_type, version_no, line_mark,
+          lower_material, upper_material, tail_mat,
+          quantity, unit_price, total_price,
+          payment_status, logistics, remark, status,
+          created_at, updated_at, tracking_no
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, '软包', '', '', ?, ?, ?, 1, 0, 0, ?, ?, ?, '已发货', ?, ?, ?)
+      `, [
+        orderNo, now, customer_name, '',
+        brand, model, yearStyle,
+        lower_material || '', upper_material || '', tail_mat || '',
+        paymentStatus, logistics || '', remark || '',
+        now, now, tracking_no || ''
+      ]);
+      
+      // 获取刚插入的订单ID
+      const idStmt = db.prepare('SELECT last_insert_rowid() as id');
+      idStmt.step();
+      const idRow = (idStmt as any).getAsObject();
+      idStmt.free();
+      orderId = idRow?.id || null;
+    }
+    
+    // 创建发货记录（关联订单）
     db.run(`
-      INSERT INTO shipping_records (customer_name, vehicle, logistics, tracking_no, is_collect, lower_material, upper_material, tail_mat, remark, source)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'manual')
-    `, [customer_name, vehicle || '', logistics || '', tracking_no || '', is_collect || '否', lower_material || '', upper_material || '', tail_mat || '', remark || '']);
+      INSERT INTO shipping_records (customer_name, vehicle, logistics, tracking_no, is_collect, lower_material, upper_material, tail_mat, remark, source, order_id, order_no)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'manual', ?, ?)
+    `, [customer_name, vehicle || '', logistics || '', tracking_no || '', is_collect || '否', lower_material || '', upper_material || '', tail_mat || '', remark || '', orderId || null, orderNo || '']);
     
     saveDatabase();
     
-    return NextResponse.json({ success: true, message: '发货记录已添加' });
+    return NextResponse.json({ 
+      success: true, 
+      message: create_order ? '发货记录已添加，订单已创建' : '发货记录已添加',
+      order_no: orderNo || undefined
+    });
   } catch (error) {
     console.error('添加发货记录失败:', error);
     return NextResponse.json({ success: false, error: '添加失败' }, { status: 500 });

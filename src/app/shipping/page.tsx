@@ -6,8 +6,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { 
-  Package, Truck, Plus, Edit2, Trash2, X, Check, RefreshCw,
-  User, Car, Ship, CreditCard, Layers, FileText, ClipboardList
+  Package, Truck, Plus, Edit2, Trash2, X, RefreshCw,
+  User, Car, Ship, CreditCard, Layers, FileText
 } from 'lucide-react';
 import BottomNav from '@/components/BottomNav';
 
@@ -49,20 +49,6 @@ function ShippingContent() {
     remark: ''
   });
   
-  // 添加订单表单状态
-  const [showAddOrderForm, setShowAddOrderForm] = useState(false);
-  const [addingOrder, setAddingOrder] = useState(false);
-  const [newOrder, setNewOrder] = useState({
-    customer_name: '',
-    vehicle: '',
-    logistics: '',
-    is_collect: '否',
-    lower_material: '',
-    upper_material: '',
-    tail_mat: '',
-    remark: ''
-  });
-  
   // 编辑状态
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editRecord, setEditRecord] = useState<ShippingRecord | null>(null);
@@ -92,7 +78,7 @@ function ShippingContent() {
     return () => clearInterval(interval);
   }, []);
 
-  // 新增发货记录
+  // 新增发货记录（同时创建订单）
   const handleAdd = async () => {
     if (!newRecord.customer_name.trim()) {
       alert('请输入客户名称');
@@ -101,10 +87,14 @@ function ShippingContent() {
     
     setAdding(true);
     try {
+      // 调用新增发货API（会同时创建订单）
       const res = await fetch('/api/shipping', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(newRecord)
+        body: JSON.stringify({
+          ...newRecord,
+          create_order: true  // 标记需要同时创建订单
+        })
       });
       
       const data = await res.json();
@@ -130,46 +120,6 @@ function ShippingContent() {
       alert('添加失败');
     } finally {
       setAdding(false);
-    }
-  };
-
-  // 添加订单（直接保存为已发货）
-  const handleAddOrder = async () => {
-    if (!newOrder.customer_name.trim()) {
-      alert('请输入客户名称');
-      return;
-    }
-    
-    setAddingOrder(true);
-    try {
-      const res = await fetch('/api/shipping/order', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(newOrder)
-      });
-      
-      const data = await res.json();
-      if (data.success) {
-        setShowAddOrderForm(false);
-        setNewOrder({
-          customer_name: '',
-          vehicle: '',
-          logistics: '',
-          is_collect: '否',
-          lower_material: '',
-          upper_material: '',
-          tail_mat: '',
-          remark: ''
-        });
-        fetchShippingList(false);
-      } else {
-        alert(data.error || '添加失败');
-      }
-    } catch (error) {
-      console.error('添加订单失败:', error);
-      alert('添加失败');
-    } finally {
-      setAddingOrder(false);
     }
   };
 
@@ -258,15 +208,6 @@ function ShippingContent() {
             className="text-white hover:bg-blue-700"
           >
             <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setShowAddOrderForm(true)}
-            className="text-white hover:bg-blue-700"
-          >
-            <ClipboardList className="w-4 h-4 mr-1" />
-            添加订单
           </Button>
           <Button
             variant="ghost"
@@ -404,125 +345,6 @@ function ShippingContent() {
               </Button>
               <Button size="sm" className="flex-1 h-8 bg-blue-600" onClick={handleAdd} disabled={adding}>
                 {adding ? '添加中...' : '保存'}
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* 添加订单表单 */}
-      {showAddOrderForm && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center">
-          <div className="bg-white w-full max-w-sm mx-4 rounded-lg p-3">
-            <div className="flex items-center justify-between mb-2">
-              <h2 className="text-base font-semibold">添加订单</h2>
-              <Button variant="ghost" size="sm" onClick={() => setShowAddOrderForm(false)} className="h-7 w-7 p-0">
-                <X className="w-4 h-4" />
-              </Button>
-            </div>
-            
-            <div className="space-y-2 text-sm">
-              <div>
-                <label className="text-xs text-gray-500">客户名称 *</label>
-                <Input
-                  value={newOrder.customer_name}
-                  onChange={e => setNewOrder(prev => ({ ...prev, customer_name: e.target.value }))}
-                  placeholder="客户名称"
-                  className="h-8 mt-1"
-                />
-              </div>
-              
-              <div>
-                <label className="text-xs text-gray-500">车型</label>
-                <Input
-                  value={newOrder.vehicle}
-                  onChange={e => setNewOrder(prev => ({ ...prev, vehicle: e.target.value }))}
-                  placeholder="车型"
-                  className="h-8 mt-1"
-                />
-              </div>
-              
-              <div>
-                <label className="text-xs text-gray-500">物流</label>
-                <Input
-                  value={newOrder.logistics}
-                  onChange={e => setNewOrder(prev => ({ ...prev, logistics: e.target.value }))}
-                  placeholder="物流公司"
-                  className="h-8 mt-1"
-                />
-              </div>
-              
-              <div>
-                <label className="text-xs text-gray-500">是否代收</label>
-                <div className="flex gap-1 mt-1">
-                  <Button
-                    variant={newOrder.is_collect === '是' ? 'default' : 'outline'}
-                    size="sm"
-                    onClick={() => setNewOrder(prev => ({ ...prev, is_collect: '是' }))}
-                    className={`h-7 px-3 ${newOrder.is_collect === '是' ? 'bg-blue-600' : ''}`}
-                  >
-                    是
-                  </Button>
-                  <Button
-                    variant={newOrder.is_collect === '否' ? 'default' : 'outline'}
-                    size="sm"
-                    onClick={() => setNewOrder(prev => ({ ...prev, is_collect: '否' }))}
-                    className={`h-7 px-3 ${newOrder.is_collect === '否' ? 'bg-blue-600' : ''}`}
-                  >
-                    否
-                  </Button>
-                </div>
-              </div>
-              
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <label className="text-xs text-gray-500">下层材料</label>
-                  <Input
-                    value={newOrder.lower_material}
-                    onChange={e => setNewOrder(prev => ({ ...prev, lower_material: e.target.value }))}
-                    placeholder="下层"
-                    className="h-8 mt-1"
-                  />
-                </div>
-                <div>
-                  <label className="text-xs text-gray-500">上层材料</label>
-                  <Input
-                    value={newOrder.upper_material}
-                    onChange={e => setNewOrder(prev => ({ ...prev, upper_material: e.target.value }))}
-                    placeholder="上层"
-                    className="h-8 mt-1"
-                  />
-                </div>
-              </div>
-              
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <label className="text-xs text-gray-500">尾垫</label>
-                  <Input
-                    value={newOrder.tail_mat}
-                    onChange={e => setNewOrder(prev => ({ ...prev, tail_mat: e.target.value }))}
-                    placeholder="尾垫"
-                    className="h-8 mt-1"
-                  />
-                </div>
-                <div>
-                  <label className="text-xs text-gray-500">备注</label>
-                  <Input
-                    value={newOrder.remark}
-                    onChange={e => setNewOrder(prev => ({ ...prev, remark: e.target.value }))}
-                    placeholder="备注"
-                    className="h-8 mt-1"
-                  />
-                </div>
-              </div>
-            </div>
-            
-            <div className="flex gap-2 mt-3">
-              <Button variant="outline" size="sm" className="flex-1 h-8" onClick={() => setShowAddOrderForm(false)}>
-                取消
-              </Button>
-              <Button size="sm" className="flex-1 h-8 bg-blue-600" onClick={handleAddOrder} disabled={addingOrder}>
-                {addingOrder ? '添加中...' : '保存'}
               </Button>
             </div>
           </div>
@@ -694,88 +516,87 @@ function ShippingContent() {
                     )}
                   </div>
                   <div className="flex gap-1">
-                    <Button variant="ghost" size="sm" onClick={() => startEdit(record)}>
-                      <Edit2 className="w-4 h-4 text-blue-600" />
+                    <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => startEdit(record)}>
+                      <Edit2 className="w-3.5 h-3.5" />
                     </Button>
                     {record.source === 'manual' && (
-                      <Button variant="ghost" size="sm" onClick={() => handleDelete(record.id)}>
-                        <Trash2 className="w-4 h-4 text-red-600" />
+                      <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-red-500" onClick={() => handleDelete(record.id)}>
+                        <Trash2 className="w-3.5 h-3.5" />
                       </Button>
                     )}
                   </div>
                 </div>
-
-                {/* 日期 */}
-                <div className="text-xs text-gray-500 mb-2">{record.date}</div>
-
-                {/* 客户名称 */}
-                <div className="flex items-center gap-2 mb-2">
-                  <User className="w-4 h-4 text-gray-500" />
-                  <span className="font-medium">{record.customer_name}</span>
-                </div>
-
-                {/* 车型 */}
-                {record.vehicle && (
-                  <div className="flex items-center gap-2 mb-2">
-                    <Car className="w-4 h-4 text-gray-500" />
-                    <span className="text-sm text-gray-600">{record.vehicle}</span>
+                
+                {/* 基本信息 */}
+                <div className="space-y-2 text-sm">
+                  <div className="flex items-center gap-2">
+                    <User className="w-4 h-4 text-gray-400" />
+                    <span className="font-medium">{record.customer_name}</span>
+                    {record.customer_phone && (
+                      <span className="text-gray-500">{record.customer_phone}</span>
+                    )}
                   </div>
-                )}
-
-                {/* 物流信息 */}
-                <div className="flex items-center gap-2 mb-2">
-                  <Ship className="w-4 h-4 text-gray-500" />
-                  <div className="flex gap-1">
+                  
+                  {record.vehicle && (
+                    <div className="flex items-center gap-2">
+                      <Car className="w-4 h-4 text-gray-400" />
+                      <span>{record.vehicle}</span>
+                    </div>
+                  )}
+                  
+                  {/* 物流信息 */}
+                  <div className="flex items-center gap-2 flex-wrap">
                     {record.logistics && (
-                      <Badge variant="outline">{record.logistics}</Badge>
+                      <div className="flex items-center gap-1">
+                        <Truck className="w-4 h-4 text-gray-400" />
+                        <Badge variant="outline" className="text-xs">{record.logistics}</Badge>
+                      </div>
                     )}
                     {record.tracking_no && (
-                      <Badge className="bg-blue-100 text-blue-700">{record.tracking_no}</Badge>
-                    )}
-                    {!record.logistics && !record.tracking_no && (
-                      <span className="text-sm text-gray-400">暂无物流信息</span>
+                      <Badge className="text-xs bg-blue-100 text-blue-700">{record.tracking_no}</Badge>
                     )}
                   </div>
-                </div>
-
-                {/* 是否代收 */}
-                <div className="flex items-center gap-2 mb-2">
-                  <CreditCard className="w-4 h-4 text-gray-500" />
-                  <Badge variant={record.is_collect === '是' ? 'default' : 'outline'} 
-                    className={record.is_collect === '是' ? 'bg-yellow-100 text-yellow-700' : ''}>
-                    {record.is_collect === '是' ? '代收' : '不代收'}
-                  </Badge>
-                </div>
-
-                {/* 材料信息 */}
-                {(record.lower_material || record.upper_material) && (
-                  <div className="flex items-center gap-2 mb-2">
-                    <Layers className="w-4 h-4 text-gray-500" />
-                    <div className="text-sm text-gray-600">
-                      {record.lower_material && <span>下层：{record.lower_material}</span>}
-                      {record.lower_material && record.upper_material && <span className="mx-1">/</span>}
-                      {record.upper_material && <span>上层：{record.upper_material}</span>}
-                    </div>
-                  </div>
-                )}
-
-                {/* 尾垫 */}
-                {record.tail_mat && (
-                  <div className="flex items-center gap-2 mb-2">
-                    <Package className="w-4 h-4 text-gray-500" />
-                    <span className="text-sm text-gray-600">尾垫：{record.tail_mat}</span>
-                  </div>
-                )}
-
-                {/* 备注 */}
-                {record.remark && (
-                  <div className="border-t pt-2 mt-2">
+                  
+                  {/* 代收标识 */}
+                  {record.is_collect === '是' && (
+                    <Badge className="bg-orange-100 text-orange-700 text-xs">
+                      <CreditCard className="w-3 h-3 mr-1" />
+                      代收
+                    </Badge>
+                  )}
+                  
+                  {/* 材料信息 */}
+                  {(record.lower_material || record.upper_material) && (
                     <div className="flex items-center gap-2">
-                      <FileText className="w-4 h-4 text-gray-500" />
-                      <span className="text-sm text-gray-600">备注：{record.remark}</span>
+                      <Layers className="w-4 h-4 text-gray-400" />
+                      <span className="text-gray-600">
+                        {record.lower_material && `下层: ${record.lower_material}`}
+                        {record.lower_material && record.upper_material && ' / '}
+                        {record.upper_material && `上层: ${record.upper_material}`}
+                      </span>
                     </div>
+                  )}
+                  
+                  {/* 尾垫 */}
+                  {record.tail_mat && (
+                    <div className="text-gray-600 text-xs">
+                      尾垫: {record.tail_mat}
+                    </div>
+                  )}
+                  
+                  {/* 备注 */}
+                  {record.remark && (
+                    <div className="flex items-center gap-2 pt-2 border-t">
+                      <FileText className="w-4 h-4 text-gray-400" />
+                      <span className="text-gray-600">{record.remark}</span>
+                    </div>
+                  )}
+                  
+                  {/* 日期 */}
+                  <div className="text-xs text-gray-400 mt-2">
+                    {record.date}
                   </div>
-                )}
+                </div>
               </CardContent>
             </Card>
           ))
@@ -790,11 +611,7 @@ function ShippingContent() {
 
 export default function ShippingPage() {
   return (
-    <Suspense fallback={
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center text-gray-500">加载中...</div>
-      </div>
-    }>
+    <Suspense fallback={<div className="min-h-screen bg-gray-50 flex items-center justify-center">加载中...</div>}>
       <ShippingContent />
     </Suspense>
   );
