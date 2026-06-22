@@ -42,12 +42,12 @@ function EditOrderContent() {
     model: '',
     year_style: '',
     product_type: '脚垫',
-    version_no: '',
     lower_material: '',
     upper_material: '',
     craft: '双针',
     auxiliary: '普通扣',
     tail_mat: '无',
+    tail_version_no: '',
     color: '',
     quantity: 1,
     unit_price: 0,
@@ -77,12 +77,12 @@ function EditOrderContent() {
           model: order.model,
           year_style: order.year_style || '',
           product_type: order.product_type,
-          version_no: order.version_no || '',
           lower_material: order.lower_material || '',
           upper_material: order.upper_material || '',
           craft: order.craft || '双针',
           auxiliary: order.auxiliary || '普通扣',
           tail_mat: order.tail_mat || '无',
+          tail_version_no: order.tail_version_no || '',
           color: order.color || '',
           quantity: order.quantity,
           unit_price: order.unit_price,
@@ -267,16 +267,6 @@ function EditOrderContent() {
             </div>
 
             <div>
-              <Label className="text-sm">版型号</Label>
-              <Input 
-                value={formData.version_no}
-                onChange={e => setFormData(prev => ({ ...prev, version_no: e.target.value }))}
-                placeholder="输入版型号"
-                className="mt-1"
-              />
-            </div>
-
-            <div>
               <Label className="text-sm">下层材料</Label>
               <Input 
                 value={formData.lower_material}
@@ -345,6 +335,16 @@ function EditOrderContent() {
                   ))}
                 </SelectContent>
               </Select>
+            </div>
+
+            <div>
+              <Label className="text-sm">后舱版型号</Label>
+              <Input 
+                value={formData.tail_version_no}
+                onChange={e => setFormData(prev => ({ ...prev, tail_version_no: e.target.value }))}
+                placeholder="输入后舱版型号"
+                className="mt-1"
+              />
             </div>
 
             <div>

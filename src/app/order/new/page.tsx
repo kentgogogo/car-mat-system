@@ -82,6 +82,7 @@ export default function NewOrderPage() {
     craft: '双针',
     auxiliary: '普通扣',
     tail_mat: '无',
+    tail_version_no: '',
     color: '',
     quantity: 1,
     unit_price: 0,
@@ -443,6 +444,17 @@ export default function NewOrderPage() {
                   ))}
                 </SelectContent>
               </Select>
+            </div>
+
+            {/* 后舱版型号 */}
+            <div>
+              <Label className="text-sm">后舱版型号</Label>
+              <Input 
+                value={formData.tail_version_no}
+                onChange={e => setFormData(prev => ({ ...prev, tail_version_no: e.target.value }))}
+                placeholder="输入后舱版型号"
+                className="mt-1"
+              />
             </div>
 
             {/* 颜色 */}

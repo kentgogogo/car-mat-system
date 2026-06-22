@@ -51,6 +51,7 @@ export async function POST(request: NextRequest) {
       craft,
       auxiliary,
       tail_mat,
+      tail_version_no,
       color,
       quantity = 1,
       unit_price,
@@ -88,14 +89,14 @@ export async function POST(request: NextRequest) {
         order_no, date, customer_name, customer_phone, logistics,
         brand, model, year_style, product_type, version_no, line_mark, vin_code,
         set_type, embroidery_type, sewing_fee, embroidery_fee,
-        lower_material, upper_material, craft, auxiliary, tail_mat,
+        lower_material, upper_material, craft, auxiliary, tail_mat, tail_version_no,
         color, quantity, unit_price, total_price, payment_status, remark, status
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, '待裁剪')
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, '待裁剪')
     `, [
       order_no, date, customer_name, customer_phone, logistics,
       brand, model, year_style, product_type, version_no, line_mark || null, vin_code || null,
       set_type, embroidery_type, sewingFee, embroideryFee,
-      lower_material, upper_material, craft, auxiliary, tail_mat,
+      lower_material, upper_material, craft, auxiliary, tail_mat, tail_version_no || null,
       color, quantity, unit_price, total_price, payment_status, remark
     ]);
 

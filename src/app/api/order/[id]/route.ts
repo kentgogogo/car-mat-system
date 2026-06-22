@@ -22,6 +22,7 @@ export async function PUT(request: NextRequest) {
       craft,
       auxiliary,
       tail_mat,
+      tail_version_no,
       color,
       quantity,
       unit_price,
@@ -36,14 +37,14 @@ export async function PUT(request: NextRequest) {
       UPDATE orders SET
         date = ?, customer_name = ?, customer_phone = ?, logistics = ?,
         brand = ?, model = ?, year_style = ?, product_type = ?, version_no = ?, vin_code = ?,
-        lower_material = ?, upper_material = ?, craft = ?, auxiliary = ?, tail_mat = ?,
+        lower_material = ?, upper_material = ?, craft = ?, auxiliary = ?, tail_mat = ?, tail_version_no = ?,
         color = ?, quantity = ?, unit_price = ?, total_price = ?, payment_status = ?,
         remark = ?, status = ?, updated_at = CURRENT_TIMESTAMP
       WHERE order_no = ?
     `, [
       date, customer_name, customer_phone, logistics,
       brand, model, year_style, product_type, version_no, vin_code || null,
-      lower_material, upper_material, craft, auxiliary, tail_mat,
+      lower_material, upper_material, craft, auxiliary, tail_mat, tail_version_no || null,
       color, quantity, unit_price, total_price, payment_status,
       remark, status, order_no
     ]);

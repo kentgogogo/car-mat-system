@@ -34,6 +34,7 @@ interface Order {
   craft: string;
   auxiliary: string;
   tail_mat: string;
+  tail_version_no: string;
   color: string;
   quantity: number;
   unit_price: number;
@@ -223,6 +224,7 @@ function OrderDetailContent() {
               <div><span className="text-gray-500">工艺：</span>{order.craft || '-'}</div>
               <div><span className="text-gray-500">辅料：</span>{order.auxiliary || '-'}</div>
               <div><span className="text-gray-500">尾垫：</span>{order.tail_mat || '-'}</div>
+              <div><span className="text-gray-500">后舱版型号：</span>{order.tail_version_no || '-'}</div>
               <div><span className="text-gray-500">颜色：</span>{order.color || '-'}</div>
             </div>
           </CardContent>

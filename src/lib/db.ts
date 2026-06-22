@@ -171,6 +171,7 @@ function initTables(database: SqlJsDatabase) {
   addColumnIfNotExists('orders', 'sewing_fee', 'INTEGER DEFAULT 0');
   addColumnIfNotExists('orders', 'embroidery_fee', 'INTEGER DEFAULT 0');
   addColumnIfNotExists('orders', 'tracking_no', 'TEXT');
+  addColumnIfNotExists('orders', 'tail_version_no', 'TEXT'); // 后舱版型号
 
   // customers 表新字段
   addColumnIfNotExists('customers', 'logistics', 'TEXT');
