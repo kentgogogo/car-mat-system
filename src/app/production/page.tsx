@@ -29,6 +29,8 @@ interface Production {
   worker_name: string;
   complete_time: string;
   customer_name: string;
+  version_no: string;
+  tail_version_no: string;
 }
 
 interface OrderDetail {
@@ -48,6 +50,7 @@ interface OrderDetail {
   year_style: string;
   product_type: string;
   version_no: string;
+  tail_version_no: string;
   lower_material: string;
   upper_material: string;
   craft: string;
@@ -284,6 +287,12 @@ export default function ProductionPage() {
                 <div className="text-sm mb-2">
                   <div className="font-medium">{production.product_info}</div>
                   <div className="text-gray-500">客户: {production.customer_name || '-'}</div>
+                  {production.version_no && (
+                    <div className="text-gray-500">版型号: <span className="text-blue-600 font-medium">{production.version_no}</span></div>
+                  )}
+                  {production.tail_version_no && (
+                    <div className="text-gray-500">后舱版型号: <span className="text-blue-600 font-medium">{production.tail_version_no}</span></div>
+                  )}
                 </div>
 
                 {/* 数量和工人 */}
@@ -441,6 +450,10 @@ export default function ProductionPage() {
                   <div>
                     <span className="text-gray-500">尾垫:</span>
                     <span className="ml-1">{currentDetail.tail_mat || '-'}</span>
+                  </div>
+                  <div>
+                    <span className="text-gray-500">后舱版型号:</span>
+                    <span className="ml-1">{currentDetail.tail_version_no || '-'}</span>
                   </div>
                   <div>
                     <span className="text-gray-500">数量:</span>

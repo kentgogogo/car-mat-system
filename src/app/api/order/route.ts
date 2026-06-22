@@ -113,11 +113,13 @@ export async function POST(request: NextRequest) {
         INSERT INTO production (
           production_no, order_no, order_id, product_info, model,
           lower_material, upper_material, craft, auxiliary,
+          version_no, tail_version_no,
           quantity, status, worker_type, fee
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, '待裁剪', '车工', ?)
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, '待裁剪', '车工', ?)
       `, [
         production_no, order_no, order_id, product_info, model || null,
         lower_material || null, upper_material || null, craft || null, auxiliary || null,
+        version_no || null, tail_version_no || null,
         quantity, sewingFee
       ]);
 
@@ -128,11 +130,13 @@ export async function POST(request: NextRequest) {
           INSERT INTO production (
             production_no, order_no, order_id, product_info, model,
             lower_material, upper_material, craft, auxiliary,
+            version_no, tail_version_no,
             quantity, status, worker_type, fee
-          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, '待裁剪', '绣线', ?)
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, '待裁剪', '绣线', ?)
         `, [
           embroidery_production_no, order_no, order_id, `${product_info} 绣线`, model || null,
           lower_material || null, upper_material || null, craft || null, auxiliary || null,
+          version_no || null, tail_version_no || null,
           quantity, embroideryFee
         ]);
       }

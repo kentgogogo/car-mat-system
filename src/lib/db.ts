@@ -187,6 +187,8 @@ function initTables(database: SqlJsDatabase) {
   addColumnIfNotExists('production', 'upper_material', 'TEXT');
   addColumnIfNotExists('production', 'craft', 'TEXT');
   addColumnIfNotExists('production', 'auxiliary', 'TEXT');
+  addColumnIfNotExists('production', 'version_no', 'TEXT'); // 版型号
+  addColumnIfNotExists('production', 'tail_version_no', 'TEXT'); // 后舱版型号
 
   // workers 表新字段
   addColumnIfNotExists('workers', 'sewing_full', 'INTEGER DEFAULT 0');
