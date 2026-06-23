@@ -25,6 +25,7 @@ export async function PUT(
       logistics, 
       tracking_no, 
       is_collect, 
+      amount,
       lower_material, 
       upper_material, 
       tail_mat, 
@@ -36,27 +37,27 @@ export async function PUT(
       const recordId = parseInt(id.replace('manual_', ''));
       db.run(`
         UPDATE shipping_records 
-        SET customer_name = ?, vehicle = ?, logistics = ?, tracking_no = ?, is_collect = ?, 
+        SET customer_name = ?, vehicle = ?, logistics = ?, tracking_no = ?, is_collect = ?, amount = ?,
             lower_material = ?, upper_material = ?, tail_mat = ?, remark = ?, updated_at = CURRENT_TIMESTAMP
         WHERE id = ?
-      `, [customer_name || '', vehicle || '', logistics || '', tracking_no || '', is_collect || '否', 
+      `, [customer_name || '', vehicle || '', logistics || '', tracking_no || '', is_collect || '否', amount || 0,
           lower_material || '', upper_material || '', tail_mat || '', remark || '', recordId]);
     } else if (isOrder) {
-      // 更新订单来源的发货记录（只更新物流相关字段）
+      // 更新订单来源的发货记录（更新物流和金额相关字段）
       const orderId = parseInt(id.replace('order_', ''));
       db.run(`
         UPDATE orders 
-        SET logistics = ?, tracking_no = ?, remark = ?, updated_at = CURRENT_TIMESTAMP
+        SET logistics = ?, tracking_no = ?, payment_status = ?, total_price = ?, remark = ?, updated_at = CURRENT_TIMESTAMP
         WHERE id = ?
-      `, [logistics || '', tracking_no || '', remark || '', orderId]);
+      `, [logistics || '', tracking_no || '', is_collect === '是' ? '代收' : '未付', amount || 0, remark || '', orderId]);
     } else {
       // 兼容旧的纯数字 ID（订单 ID）
       const orderId = parseInt(id);
       db.run(`
         UPDATE orders 
-        SET logistics = ?, tracking_no = ?, remark = ?, updated_at = CURRENT_TIMESTAMP
+        SET logistics = ?, tracking_no = ?, payment_status = ?, total_price = ?, remark = ?, updated_at = CURRENT_TIMESTAMP
         WHERE id = ?
-      `, [logistics || '', tracking_no || '', remark || '', orderId]);
+      `, [logistics || '', tracking_no || '', is_collect === '是' ? '代收' : '未付', amount || 0, orderId]);
     }
     
     saveDatabase();

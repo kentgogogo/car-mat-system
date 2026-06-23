@@ -189,6 +189,7 @@ function initTables(database: SqlJsDatabase) {
   addColumnIfNotExists('production', 'auxiliary', 'TEXT');
   addColumnIfNotExists('production', 'version_no', 'TEXT'); // 版型号
   addColumnIfNotExists('production', 'tail_version_no', 'TEXT'); // 后舱版型号
+  addColumnIfNotExists('shipping_records', 'amount', 'REAL DEFAULT 0'); // 代收金额
 
   // workers 表新字段
   addColumnIfNotExists('workers', 'sewing_full', 'INTEGER DEFAULT 0');

@@ -62,6 +62,7 @@ export async function GET() {
         logistics,
         tracking_no,
         is_collect,
+        amount,
         lower_material,
         upper_material,
         tail_mat,
@@ -93,6 +94,7 @@ export async function GET() {
       upper_material: order.upper_material || '',
       tail_mat: order.tail_mat || '',
       quantity: order.quantity || 1,
+      amount: order.total_price || 0,
       remark: order.remark || ''
     }));
     
@@ -113,6 +115,7 @@ export async function GET() {
       upper_material: record.upper_material || '',
       tail_mat: record.tail_mat || '',
       quantity: 1,
+      amount: record.amount || 0,
       remark: record.remark || ''
     }));
     
@@ -138,6 +141,7 @@ export async function POST(request: Request) {
       logistics, 
       tracking_no, 
       is_collect, 
+      amount,
       lower_material, 
       upper_material, 
       tail_mat, 
@@ -195,9 +199,9 @@ export async function POST(request: Request) {
     
     // 创建发货记录（关联订单）
     db.run(`
-      INSERT INTO shipping_records (customer_name, vehicle, logistics, tracking_no, is_collect, lower_material, upper_material, tail_mat, remark, source, order_id, order_no)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'manual', ?, ?)
-    `, [customer_name, vehicle || '', logistics || '', tracking_no || '', is_collect || '否', lower_material || '', upper_material || '', tail_mat || '', remark || '', orderId || null, orderNo || '']);
+      INSERT INTO shipping_records (customer_name, vehicle, logistics, tracking_no, is_collect, amount, lower_material, upper_material, tail_mat, remark, source, order_id, order_no)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'manual', ?, ?)
+    `, [customer_name, vehicle || '', logistics || '', tracking_no || '', is_collect || '否', amount || 0, lower_material || '', upper_material || '', tail_mat || '', remark || '', orderId || null, orderNo || '']);
     
     saveDatabase();
     

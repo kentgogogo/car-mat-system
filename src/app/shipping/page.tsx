@@ -21,6 +21,7 @@ interface ShippingRecord {
   logistics: string;
   tracking_no: string;
   is_collect: string;
+  amount: number;
   vehicle: string;
   lower_material: string;
   upper_material: string;
@@ -43,6 +44,7 @@ function ShippingContent() {
     logistics: '',
     tracking_no: '',
     is_collect: '否',
+    amount: 0,
     lower_material: '',
     upper_material: '',
     tail_mat: '',
@@ -106,6 +108,7 @@ function ShippingContent() {
           logistics: '',
           tracking_no: '',
           is_collect: '否',
+          amount: 0,
           lower_material: '',
           upper_material: '',
           tail_mat: '',
@@ -296,6 +299,19 @@ function ShippingContent() {
                 </div>
               </div>
               
+              {newRecord.is_collect === '是' && (
+                <div>
+                  <label className="text-xs text-gray-500">代收金额</label>
+                  <Input
+                    type="number"
+                    value={newRecord.amount}
+                    onChange={e => setNewRecord(prev => ({ ...prev, amount: parseFloat(e.target.value) || 0 }))}
+                    placeholder="金额"
+                    className="h-8 mt-1"
+                  />
+                </div>
+              )}
+              
               <div className="grid grid-cols-2 gap-2">
                 <div>
                   <label className="text-xs text-gray-500">下层材料</label>
@@ -427,6 +443,19 @@ function ShippingContent() {
                   </Button>
                 </div>
               </div>
+              
+              {editRecord.is_collect === '是' && (
+                <div>
+                  <label className="text-xs text-gray-500">代收金额</label>
+                  <Input
+                    type="number"
+                    value={editRecord.amount}
+                    onChange={e => setEditRecord(prev => prev ? { ...prev, amount: parseFloat(e.target.value) || 0 } : null)}
+                    placeholder="金额"
+                    className="h-8 mt-1"
+                  />
+                </div>
+              )}
               
               <div className="grid grid-cols-2 gap-2">
                 <div>
