@@ -1,0 +1,20 @@
+version: '3'
+services:
+  directus:
+    image: directus/directus:latest
+    ports:
+      - '8055:8055'
+    volumes:
+      - ./directus/database:/directus/database
+      - ./directus/uploads:/directus/uploads
+      - ./directus/extensions:/directus/extensions
+    environment:
+      KEY: 'd1r3ctu5-k3y-2026'
+      SECRET: 'd1r3ctu5-s3cr3t-2026'
+      ADMIN_EMAIL: 'admin@car-mat.com'
+      ADMIN_PASSWORD: 'CarMat2026!'
+      DB_CLIENT: 'sqlite3'
+      DB_FILENAME: '/directus/database/data.db'
+      WEBSOCKETS_ENABLED: 'true'
+      DEFAULT_LANGUAGE: 'zh-CN'
+    restart: unless-stopped
